@@ -1,0 +1,75 @@
+﻿<Window x:Class="QuantBook.MainView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"        
+        xmlns:cal="http://www.caliburnproject.org"
+        WindowState="Maximized" TextOptions.TextFormattingMode="Display">
+    <DockPanel>
+        <StatusBar Height="25" DockPanel.Dock="Bottom" Margin="0">
+            <StatusBar.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="45"/>
+                            <ColumnDefinition Width="110"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="200"/>
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                </ItemsPanelTemplate>
+            </StatusBar.ItemsPanel>
+            <StatusBarItem Grid.Column="0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Margin="10,0,0,0" Text="Status:" FontSize="10" Foreground="DarkGreen"/>
+                </StackPanel>
+            </StatusBarItem>
+            <StatusBarItem Grid.Column="1">
+                <ProgressBar x:Name="ProgressValue" Width="100" Height="16" BorderThickness="0" Minimum="{Binding ProgressMin}"
+                             Maximum="{Binding ProgressMax}"/>
+            </StatusBarItem>
+            <StatusBarItem Grid.Column="2">
+                <TextBlock x:Name="StatusText" FontSize="10" Foreground="DarkGreen"/>
+            </StatusBarItem>
+
+            <StatusBarItem Grid.Column="3" HorizontalAlignment="Right" Margin="0,0,10,0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="reportLabel" Text="{Binding  SelectedItem.Header, ElementName=Items}" 
+                               FontSize="10" Foreground="DarkGreen" VerticalAlignment="Center"/>
+                </StackPanel>
+            </StatusBarItem>
+        </StatusBar>
+
+        <Grid Margin="10,0,10,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ScrollViewer.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="Gray" Offset="0"/>
+                        <GradientStop Color="Transparent" Offset="1"/>
+                    </LinearGradientBrush>
+                </ScrollViewer.Background>
+                <StackPanel x:Name="buttonPanel" Margin="0 10 0 0">
+                    <Button Content="Chapter 1" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
+                    <Button Content="Chapter 2" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
+                    <Button Content="Chapter 3" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
+                    <Button Content="Chapter 4" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
+                    <Button Content="Chapter 5" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
+                    <Button Content="Chapter 6" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
+                    <Button Content="Chapter 7" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
+                    <Button Content="Chapter 8" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
+                    <Button Content="Chapter 9" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
+                    <Button Content="Chapter 10" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
+                    <Button Content="Chapter 11" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
+                </StackPanel>
+            </ScrollViewer>
+            <TabControl Grid.Column="1" x:Name="Items"/>
+        </Grid>
+    </DockPanel>
+</Window>
