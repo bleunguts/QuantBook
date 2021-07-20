@@ -79,10 +79,9 @@ namespace QuantBook
         public MainViewModel([ImportMany]IEnumerable<IScreen> screens, IEventAggregator events)
         {
             this.screens = screens;
-            Items.Clear();
             this.events = events;
+            Items.Clear();
             this.events.SubscribeOnPublishedThread(this);
-
             DisplayName = "Quant Book Project";
         }
 
