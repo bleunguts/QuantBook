@@ -9,7 +9,7 @@ namespace QuantBook.Tests
 {
     /// <summary>
     /// If you are looking at this and realize why it doesnt work its because Yahoo discountued there finance api
-    /// there is an alternative
+    /// there is an alternative but its paid for and the interface has changed.
     /// </summary>
     public class YahooHelperTest
     {
