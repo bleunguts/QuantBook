@@ -6,16 +6,55 @@
 	<UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+
   <ItemGroup>
-    <Folder Include="Ch03\" />
+    <None Remove="Models\MyDb.edmx" />
+    <None Remove="Models\NwndModel.edmx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EntityDeploy Include="Models\MyDb.edmx">
+      <Generator>EntityModelCodeGenerator</Generator>
+      <LastGenOutput>MyDb.Designer.cs</LastGenOutput>
+    </EntityDeploy>
+    <EntityDeploy Include="Models\NwndModel.edmx">
+      <Generator>EntityModelCodeGenerator</Generator>
+      <LastGenOutput>NwndModel.Designer.cs</LastGenOutput>
+    </EntityDeploy>
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Caliburn.Micro" Version="4.0.173" />
+    <PackageReference Include="EntityFramework" Version="6.4.4" />
+    <PackageReference Include="Quandl.NET" Version="1.2.1" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Data.Entity" />
+    <Reference Include="System.Security" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Models\MyDb.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>MyDb.edmx</DependentUpon>
+    </Compile>
+    <Compile Update="Models\NwndModel.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>NwndModel.edmx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="StockTickers.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

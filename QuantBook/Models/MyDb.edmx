@@ -1,0 +1,154 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+      <Schema Namespace="MyDbModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2008" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+        <EntityType Name="Price">
+          <Key>
+            <PropertyRef Name="PriceID" />
+          </Key>
+          <Property Name="PriceID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="SymbolID" Type="int" Nullable="false" />
+          <Property Name="Date" Type="datetime" />
+          <Property Name="PriceOpen" Type="float" />
+          <Property Name="PriceHigh" Type="float" />
+          <Property Name="PriceLow" Type="float" />
+          <Property Name="PriceClose" Type="float" />
+          <Property Name="PriceAdj" Type="float" />
+          <Property Name="Volume" Type="float" />
+        </EntityType>
+        <EntityType Name="Symbol">
+          <Key>
+            <PropertyRef Name="SymbolID" />
+          </Key>
+          <Property Name="SymbolID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Ticker" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="Region" Type="nvarchar" MaxLength="50" />
+          <Property Name="Sector" Type="nvarchar" MaxLength="150" />
+        </EntityType>
+        <Association Name="FK_Price_Symbol">
+          <End Role="Symbol" Type="Self.Symbol" Multiplicity="1" />
+          <End Role="Price" Type="Self.Price" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Symbol">
+              <PropertyRef Name="SymbolID" />
+            </Principal>
+            <Dependent Role="Price">
+              <PropertyRef Name="SymbolID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityContainer Name="MyDbModelStoreContainer">
+          <EntitySet Name="Price" EntityType="Self.Price" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Symbol" EntityType="Self.Symbol" Schema="dbo" store:Type="Tables" />
+          <AssociationSet Name="FK_Price_Symbol" Association="Self.FK_Price_Symbol">
+            <End Role="Symbol" EntitySet="Symbol" />
+            <End Role="Price" EntitySet="Price" />
+          </AssociationSet>
+        </EntityContainer>
+      </Schema>
+    </edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="MyDbModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+        <EntityType Name="Price">
+          <Key>
+            <PropertyRef Name="PriceID" />
+          </Key>
+          <Property Name="PriceID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="SymbolID" Type="Int32" Nullable="false" />
+          <Property Name="Date" Type="DateTime" />
+          <Property Name="PriceOpen" Type="Double" />
+          <Property Name="PriceHigh" Type="Double" />
+          <Property Name="PriceLow" Type="Double" />
+          <Property Name="PriceClose" Type="Double" />
+          <Property Name="PriceAdj" Type="Double" />
+          <Property Name="Volume" Type="Double" />
+          <NavigationProperty Name="Symbol" Relationship="Self.FK_Price_Symbol" FromRole="Price" ToRole="Symbol" />
+        </EntityType>
+        <EntityType Name="Symbol">
+          <Key>
+            <PropertyRef Name="SymbolID" />
+          </Key>
+          <Property Name="SymbolID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Ticker" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="Region" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="Sector" Type="String" MaxLength="150" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="Prices" Relationship="Self.FK_Price_Symbol" FromRole="Symbol" ToRole="Price" />
+        </EntityType>
+        <Association Name="FK_Price_Symbol">
+          <End Role="Symbol" Type="Self.Symbol" Multiplicity="1" />
+          <End Role="Price" Type="Self.Price" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Symbol">
+              <PropertyRef Name="SymbolID" />
+            </Principal>
+            <Dependent Role="Price">
+              <PropertyRef Name="SymbolID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityContainer Name="MyDbEntities" annotation:LazyLoadingEnabled="true">
+          <EntitySet Name="Prices" EntityType="Self.Price" />
+          <EntitySet Name="Symbols" EntityType="Self.Symbol" />
+          <AssociationSet Name="FK_Price_Symbol" Association="Self.FK_Price_Symbol">
+            <End Role="Symbol" EntitySet="Symbols" />
+            <End Role="Price" EntitySet="Prices" />
+          </AssociationSet>
+        </EntityContainer>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="MyDbModelStoreContainer" CdmEntityContainer="MyDbEntities">
+          <EntitySetMapping Name="Prices">
+            <EntityTypeMapping TypeName="MyDbModel.Price">
+              <MappingFragment StoreEntitySet="Price">
+                <ScalarProperty Name="PriceID" ColumnName="PriceID" />
+                <ScalarProperty Name="SymbolID" ColumnName="SymbolID" />
+                <ScalarProperty Name="Date" ColumnName="Date" />
+                <ScalarProperty Name="PriceOpen" ColumnName="PriceOpen" />
+                <ScalarProperty Name="PriceHigh" ColumnName="PriceHigh" />
+                <ScalarProperty Name="PriceLow" ColumnName="PriceLow" />
+                <ScalarProperty Name="PriceClose" ColumnName="PriceClose" />
+                <ScalarProperty Name="PriceAdj" ColumnName="PriceAdj" />
+                <ScalarProperty Name="Volume" ColumnName="Volume" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Symbols">
+            <EntityTypeMapping TypeName="MyDbModel.Symbol">
+              <MappingFragment StoreEntitySet="Symbol">
+                <ScalarProperty Name="SymbolID" ColumnName="SymbolID" />
+                <ScalarProperty Name="Ticker" ColumnName="Ticker" />
+                <ScalarProperty Name="Region" ColumnName="Region" />
+                <ScalarProperty Name="Sector" ColumnName="Sector" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="true" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="true" />
+        <DesignerProperty Name="UseLegacyProvider" Value="false" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams></Diagrams>
+  </Designer>
+</edmx:Edmx>

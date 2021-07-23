@@ -1,0 +1,34 @@
+﻿<UserControl x:Class="QuantBook.Ch04.AddPricesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:QuantBook.Ch04"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid Margin="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Margin="0 20 10 5">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="SymbolID" Width="65" TextAlignment="Right"/>
+                <TextBlock x:Name="SymbolID" Width="100" Margin="5 0 0 0"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0 10 0 0">
+                <TextBlock Text="StartDate" Width="65" TextAlignment="Right"/>
+                <TextBlock x:Name="StartDate" Width="100" Margin="5 0 0 0"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0 10 0 0">
+                <TextBlock Text="EndDate" Width="65" TextAlignment="Right"/>
+                <TextBlock x:Name="EndDate" Width="100" Margin="5 0 0 0"/>
+            </StackPanel>
+            <Button x:Name="GetPrice" Content="Get Price" Width="100" Margin="0 20 0 0"/>
+            <Button x:Name="SavePrice" Content="Save Price" Width="100" Margin="0 10 0 0"/>
+            <Button x:Name="GetPrices" Content="Get All Prices" Width="100" Margin="0 30 0 0"/>
+        </StackPanel>
+
+        <DataGrid x:Name="PriceCollection" ColumnWidth="*" CanUserAddRows="False" Grid.Column="1" FontSize="10"/>
+    </Grid>
+</UserControl>
