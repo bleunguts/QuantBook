@@ -57,7 +57,7 @@ namespace QuantBook.Ch09
         public double Zmax
         {
             get { return zmax; }
-            set { zmax = value; }
+            set { zmax = value; NotifyOfPropertyChange(() => Zmax); }
         }
 
         private string zLabel;
@@ -65,7 +65,7 @@ namespace QuantBook.Ch09
         public string ZLabel
         {
             get { return zLabel; }
-            set { zLabel = value; }
+            set { zLabel = value; NotifyOfPropertyChange(() => ZLabel); }
         }
 
         private double zTick;
@@ -73,7 +73,7 @@ namespace QuantBook.Ch09
         public double ZTick
         {
             get { return zTick; }
-            set { zTick = value; }
+            set { zTick = value; NotifyOfPropertyChange(() => ZTick); }
         }
 
         private void InitializeModel()
@@ -124,15 +124,21 @@ namespace QuantBook.Ch09
                 double delta = OptionHelper.BlackScholes_Delta(optionType, spot, strike, rate, carry, maturity, vol);
                 double gamma = OptionHelper.BlackScholes_Gamma(spot, strike, rate, carry, maturity, vol);
                 double theta = OptionHelper.BlackScholes_Theta(optionType, spot, strike, rate, carry, maturity, vol);
-                double rho = OptionHelper.BlackScholes_Theta(optionType, spot, strike, rate, carry, maturity, vol);
+                double rho = OptionHelper.BlackScholes_Rho(optionType, spot, strike, rate, carry, maturity, vol);
                 double vega = OptionHelper.BlackScholes_Vega(spot, strike, rate, carry, maturity, vol);
                 OptionTable.Rows.Add(maturity, price, delta, gamma, theta, rho, vega);
             }
         }
-
-        public void PlotPrice()
+        
+        public void PlotPrice() => Plot(GreekTypeEnum.Price, "Price", 1, 1);
+        public void PlotDelta() => Plot(GreekTypeEnum.Delta, "Delta", 1, 1);
+        public void PlotGamma() => Plot(GreekTypeEnum.Gamma, "Gamma", 2, 3);
+        public void PlotTheta() => Plot(GreekTypeEnum.Theta, "Theta", 0, 0);
+        public void PlotRho() => Plot(GreekTypeEnum.Rho, "Rho", 0, 0);
+        public void PlotVega() => Plot(GreekTypeEnum.Vega, "Vega", 0, 0);
+        private void Plot(GreekTypeEnum greekType, string zLabel, int zDecimalPlaces, int zTickDecimalPlaces)
         {
-            ZLabel = "Price";
+            ZLabel = zLabel;
             OptionType optionType = optionInputTable.Rows[0]["Value"].ToString() == "Call" ? OptionType.CALL : OptionType.PUT;
             double spot = Convert.ToDouble(OptionInputTable.Rows[1]["Value"]);
             double strike = Convert.ToDouble(OptionInputTable.Rows[2]["Value"]);
@@ -142,10 +148,10 @@ namespace QuantBook.Ch09
             DataCollection.Clear();
             var ds = new DataSeries3D();
             ds.LineColor = Brushes.Black;
-            double[] z = OptionPlotHelper.PlotGreeks(ds, GreekTypeEnum.Price, optionType, strike, rate, carry, vol);
-            Zmin = Math.Round(z[0], 1);
-            Zmax = Math.Round(z[1], 1);
-            ZTick = Math.Round(z[1] - z[0] / 5.0, 1);
+            double[] z = OptionPlotHelper.PlotGreeks(ds, greekType, optionType, strike, rate, carry, vol);
+            Zmin = Math.Round(z[0], zDecimalPlaces);
+            Zmax = Math.Round(z[1], zDecimalPlaces);
+            ZTick = Math.Round((z[1] - z[0])/ 5.0, zTickDecimalPlaces);
             DataCollection.Add(ds);
         }
     }    

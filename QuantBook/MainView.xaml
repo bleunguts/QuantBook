@@ -59,12 +59,12 @@
                     <Button Content="Chapter 1" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
                     <Button Content="Chapter 2" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
                     <Button Content="Chapter 3" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
-                    <Button Content="Chapter 4" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
+                    <Button Content="MARKETDATA 4" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
                     <Button Content="Chapter 5" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
                     <Button Content="Chapter 6" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
                     <Button Content="Chapter 7" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
                     <Button Content="Chapter 8" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
-                    <Button Content="Chapter 9" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
+                    <Button Content="OPTIONS 9" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
                     <Button Content="Chapter 10" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
                     <Button Content="Chapter 11" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
                 </StackPanel>

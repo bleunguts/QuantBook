@@ -3,7 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,20 +15,34 @@ namespace QuantBook.Models.DataModel.Quandl
     {
         const string apiKey = "QgZEw__KgudKNApAxp3e";
 
-        public static async Task<string> GetQuandlDataAsync(string dataTableCode)
+        public static string GetQuandlDataAsync(string databaseCode)
         {
-            var client = new QuandlClient(apiKey);
-            using (var stream = await client.Tables.DownloadAsync(dataTableCode))            
-            using (var text = new System.IO.StreamReader(stream))
+            var uri = new Uri($"https://www.quandl.com/api/v3/databases/{databaseCode}/metadata");
+            var webclient = new WebClient();
+            var data = webclient.DownloadData(uri);
+            Console.WriteLine($"Link: {uri.AbsoluteUri.ToString()}");
+
+            var zip = new ZipArchive(new MemoryStream(data));
+            var filename = Path.GetRandomFileName();
+            try
             {
-                return text.ReadToEnd();
+                zip.Entries.First().ExtractToFile(filename);
+                return File.ReadAllText(filename);
             }
+            finally
+            {
+                var file = new FileInfo(filename);
+                if (file.Exists)
+                {
+                    file.Delete();
+                }
+            }            
         }
 
-        public static async Task<DataTable> GetQuandlDataAsync(string ticker, string dataTableCode, DateTime startDate, DateTime endDate)
+        public static async Task<DataTable> GetQuandlDataAsync(string ticker, string databaseCode, DateTime startDate, DateTime endDate)
         {
             var client = new QuandlClient(apiKey);
-            var response = await client.Timeseries.GetDataAsync(dataTableCode, ticker, limit: 20, startDate: startDate, endDate: endDate);
+            var response = await client.Timeseries.GetDataAsync(databaseCode, ticker, limit: 20, startDate: startDate, endDate: endDate);
             return TimeSeriesDataSetToDataTable(response.DatasetData.ColumnNames, response.DatasetData.Data);
         }
 

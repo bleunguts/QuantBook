@@ -40,31 +40,33 @@ namespace QuantBook.Models.Options
                     double x = ds.XLimitMin + i * ds.XSpacing;
                     double y = ds.YLimitMin + j * ds.YSpacing;
                     double z = Double.NaN;
+                    var spot = y;
+                    var maturity = x;
                     switch (greekType) 
-                    {
+                    {                    
                         case GreekTypeEnum.Delta:
-                            z = OptionHelper.BlackScholes_Delta(optionType, y, strike, rate, carry, x, vol);
+                            z = OptionHelper.BlackScholes_Delta(optionType, spot, strike, rate, carry, maturity, vol);
                             break;
                         case GreekTypeEnum.Gamma:
-                            z = OptionHelper.BlackScholes_Gamma(y, strike, rate, carry, x, vol);
+                            z = OptionHelper.BlackScholes_Gamma(spot, strike, rate, carry, maturity, vol);
                             break;
                         case GreekTypeEnum.Theta:
-                            z = OptionHelper.BlackScholes_Theta(optionType, y, strike, rate, carry, x, vol);
+                            z = OptionHelper.BlackScholes_Theta(optionType, spot, strike, rate, carry, maturity, vol);
                             break;
                         case GreekTypeEnum.Rho:
-                            z = OptionHelper.BlackScholes_Rho(optionType, y, strike, rate, carry, x, vol);
+                            z = OptionHelper.BlackScholes_Rho(optionType, spot, strike, rate, carry, maturity, vol);
                             break;
                         case GreekTypeEnum.Vega:
-                            z = OptionHelper.BlackScholes_Vega(y, strike, rate, carry, x, vol);
+                            z = OptionHelper.BlackScholes_Vega(spot, strike, rate, carry, maturity, vol);
                             break;
                         case GreekTypeEnum.Price:
-                            z = OptionHelper.BlackScholes(optionType, y, strike, rate, carry, x, vol);
+                            z = OptionHelper.BlackScholes(optionType, spot, strike, rate, carry, maturity, vol);
                             break;
                     }
                     if(!double.IsNaN(z))
                     {
                         pts[i, j] = new Point3D(x, y, z);
-                        zmin = Math.Max(zmin, z);
+                        zmin = Math.Min(zmin, z);
                         zmax = Math.Max(zmax, z);
                     }
                 }

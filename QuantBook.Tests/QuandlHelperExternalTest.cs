@@ -10,17 +10,18 @@ using System.Threading.Tasks;
 
 namespace QuantBook.Tests
 {
-    public class QuandlHelperTest        
+    public class QuandlHelperExternalTest        
     {
         [Test]
-        public async Task GetListOfDataTablesAsync()
+        [Ignore("Bombarding Quandl will cause them to return too many requests")]
+        public void GetTickersFromDatabaseCode()
         {
-            var result = await QuandlHelper.GetQuandlDataAsync("WIKI");
+            var result = QuandlHelper.GetQuandlDataAsync("ODA");
             Console.WriteLine(result);            
         }
 
         [Test]
-        public async Task GetSomeMarketDataAsync()
+        public async Task GetMarketDataAsync()
         {
             var dataTable = await QuandlHelper.GetQuandlDataAsync("FB", "WIKI", new DateTime(2018, 2, 28), new DateTime(2018, 5, 1));
             foreach(DataRow row in dataTable.Rows)

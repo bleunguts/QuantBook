@@ -18,7 +18,6 @@ namespace QuantBook.Tests
         [Test]
         public void CsvToDatableUsingOdbcTextDriverWorks()
         {
-            //var csvFile = @"C:\Dev\Projects\QuantBook\QuantBook\QuantBook.Tests\bin\Debug\net472";
             var csvFile = @"C:\temp\StockTickers.csv";
             DataTable dt = ModelHelper.CsvToDatatable(csvFile);
             Assert.Greater(dt.Rows.Count, 0);

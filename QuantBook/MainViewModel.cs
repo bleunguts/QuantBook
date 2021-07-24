@@ -81,7 +81,7 @@ namespace QuantBook
             this.screens = screens;
             this.events = events;
             Items.Clear();
-            this.events.SubscribeOnPublishedThread(this);
+            this.events.Subscribe(this);
             DisplayName = "Quant Book Project";
         }
 
@@ -114,15 +114,20 @@ namespace QuantBook
         {
             return Task.Run(() =>
             {
-                var events = message.EventList;
-                StatusText = events.First().ToString();
-                if (events.Count > 1)
-                {
-                    ProgressMin = Convert.ToInt32(events[1]);
-                    ProgressMax = Convert.ToInt32(events[2]);
-                    ProgressValue = Convert.ToInt32(events[3]);
-                }
+                Handle(message);
             }, cancellationToken);
+        }
+
+        public void Handle(ModelEvents message)
+        {
+            var events = message.EventList;
+            StatusText = events.First().ToString();
+            if (events.Count > 1)
+            {
+                ProgressMin = Convert.ToInt32(events[1]);
+                ProgressMax = Convert.ToInt32(events[2]);
+                ProgressValue = Convert.ToInt32(events[3]);
+            };
         }
     }
 }
