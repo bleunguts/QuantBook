@@ -17,7 +17,17 @@ namespace QuantBook.Tests
             var dataSeries = new DataSeries3D();
             var z = OptionPlotHelper.PlotGreeks(dataSeries, GreekTypeEnum.Price, OptionType.CALL, 100, 0.1, 0.04, 0.3);
             AssertZValue(z, rounding: 1);
-        }        
+        }
+
+        private static void AssertZValue(double[] z, int rounding)
+        {
+            var zmin = Math.Round(z[0], rounding);
+            var zmax = Math.Round(z[1], rounding);
+            var zTick = Math.Round((z[1] - z[0]) / 5.0, rounding);
+
+            Assert.IsTrue(zmin < zmax);
+            Assert.IsTrue(zTick > 0);
+        }
 
         [Test]
         public void WhenPricingACallOption()
@@ -207,16 +217,25 @@ namespace QuantBook.Tests
                 var impliedVol = OptionHelper.BlackScholes_ImpliedVol(OptionType.CALL, spot, strike, r, b, maturity, price);
                 Console.WriteLine($"ImpliedVol for price {price} and maturity {maturity} is {impliedVol}");
             }
-        }
+        }     
 
-        private static void AssertZValue(double[] z, int rounding)
+        [Test]
+        public void WhenPricingAmericanOption()
         {
-            var zmin = Math.Round(z[0], rounding);
-            var zmax = Math.Round(z[1], rounding);
-            var zTick = Math.Round((z[1] - z[0]) / 5.0, rounding);
+            var spot = 90.0;
+            var strike = 100.0;
+            var rate = 0.1;
+            var divYield = 0.1;
+            var maturity = 0.10;
+            var vol = 0.15;        
 
-            Assert.IsTrue(zmin < zmax);
-            Assert.IsTrue(zTick > 0);
+            var price = OptionHelper.American_BaroneAdesiWhaley(OptionType.CALL, spot, strike, rate, divYield, maturity, vol);
+            Console.WriteLine($"Price of call american option is {price}");
+            Assert.That(price, Is.EqualTo(0.0260).Within(1).Percent);
+
+            var putPrice = OptionHelper.American_BaroneAdesiWhaley(OptionType.PUT, spot, strike, rate, divYield, maturity, vol);
+            Console.WriteLine($"Price of put american option is {putPrice}");
+            Assert.That(putPrice, Is.EqualTo(10.00).Within(1).Percent);
         }
     }
 }

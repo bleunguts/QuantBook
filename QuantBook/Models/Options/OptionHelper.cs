@@ -22,16 +22,15 @@ namespace QuantBook.Models.Options
             return 1.0 - ONEOVERSQRT2PI * Math.Exp(-0.5 * x * x) *
                     ((((1.330274429 * k - 1.821255978) * k + 1.781477937) * k - 0.356563782) * k + 0.319381530) * k;
         }
-        
+
         // Standard Normal Density function        
         private static double NormalDensity(double z) => Math.Exp(-z * z * 0.5) / Math.Sqrt(2.0 * PI);
 
-        static double d1Func(double spot, double strike, double carry, double volatility, double maturity) =>         
-            (Math.Log(spot / strike) + (carry + (volatility * volatility) / 2) * maturity) 
-                        / 
+        static double d1_(double spot, double strike, double carry, double volatility, double maturity) =>
+            (Math.Log(spot / strike) + (carry + Math.Pow(volatility, 2) / 2) * maturity) /
             (volatility * Math.Sqrt(maturity));
 
-        static double d2Func(double d1, double volatility, double maturity) => 
+        static double d2_(double d1, double volatility, double maturity) =>
             d1 - volatility * Math.Sqrt(maturity);
 
         /// <summary>
@@ -52,25 +51,25 @@ namespace QuantBook.Models.Options
         /// <returns></returns>
         public static double BlackScholes(OptionType optionType, double spot, double strike, double rate, double carry, double maturity, double volatility)
         {
-            double d1 = d1Func(spot, strike, carry, volatility, maturity);
-            double d2 = d2Func(d1, volatility, maturity);
-                    
+            double d1 = d1_(spot, strike, carry, volatility, maturity);
+            double d2 = d2_(d1, volatility, maturity);
+
             double? option = null;
-            switch(optionType)
-            { 
+            switch (optionType)
+            {
                 case OptionType.PUT:
-                    option = ( strike * Math.Exp(-rate * maturity) * CummulativeNormal(-d2) ) - ( spot * Math.Exp((carry-rate) * maturity) * CummulativeNormal(-d1) );
+                    option = (strike * Math.Exp(-rate * maturity) * CummulativeNormal(-d2)) - (spot * Math.Exp((carry - rate) * maturity) * CummulativeNormal(-d1));
                     break;
                 case OptionType.CALL:
                     option = (spot * Math.Exp((carry - rate) * maturity) * CummulativeNormal(d1)) - (strike * Math.Exp(-rate * maturity) * CummulativeNormal(d2));
-                    break;                
-            }            
-            return option.Value;          
+                    break;
+            }
+            return option.Value;
         }
-      
+
         public static double BlackScholes_Delta(OptionType optionType, double spot, double strike, double rate, double carry, double maturity, double volatility)
         {
-            double d1 = d1Func(spot, strike, carry, volatility, maturity);
+            double d1 = d1_(spot, strike, carry, volatility, maturity);
 
             double? option = null;
             switch (optionType)
@@ -87,7 +86,7 @@ namespace QuantBook.Models.Options
 
         public static double BlackScholes_Gamma(double spot, double strike, double rate, double carry, double maturity, double volatility)
         {
-            double d1 = d1Func(spot, strike, carry, volatility, maturity);
+            double d1 = d1_(spot, strike, carry, volatility, maturity);
 
             double option = NormalDensity(d1) * Math.Exp((carry - rate) * maturity) / (spot * volatility * Math.Sqrt(maturity));
             return option;
@@ -95,8 +94,8 @@ namespace QuantBook.Models.Options
 
         public static double BlackScholes_Theta(OptionType optionType, double spot, double strike, double rate, double carry, double maturity, double volatility)
         {
-            double d1 = d1Func(spot, strike, carry, volatility, maturity);
-            double d2 = d2Func(d1, volatility, maturity);
+            double d1 = d1_(spot, strike, carry, volatility, maturity);
+            double d2 = d2_(d1, volatility, maturity);
 
             double? option = null;
             switch (optionType)
@@ -119,8 +118,8 @@ namespace QuantBook.Models.Options
 
         public static double BlackScholes_Rho(OptionType optionType, double spot, double strike, double rate, double carry, double maturity, double volatility)
         {
-            double d1 = d1Func(spot, strike, carry, volatility, maturity);
-            double d2 = d2Func(d1, volatility, maturity);
+            double d1 = d1_(spot, strike, carry, volatility, maturity);
+            double d2 = d2_(d1, volatility, maturity);
 
             // carry == 0 means option on a futures contract simple formula in that case
             if (carry == 0)
@@ -133,19 +132,19 @@ namespace QuantBook.Models.Options
             switch (optionType)
             {
                 case OptionType.PUT:
-                    option = -maturity * strike * Math.Exp(-rate * maturity) * CummulativeNormal(-d2);                
-                    break;                    
+                    option = -maturity * strike * Math.Exp(-rate * maturity) * CummulativeNormal(-d2);
+                    break;
                 case OptionType.CALL:
                     option = maturity * strike * Math.Exp(-rate * maturity) * CummulativeNormal(d2);
                     break;
             }
-            
+
             return option.Value;
-        }        
+        }
 
         public static double BlackScholes_Vega(double spot, double strike, double rate, double carry, double maturity, double vol)
         {
-            double d1 = d1Func(spot, strike, carry, vol, maturity);
+            double d1 = d1_(spot, strike, carry, vol, maturity);
             return spot * Math.Exp((carry - rate) * maturity) * CummulativeNormal(d1) * Math.Sqrt(maturity);
         }
 
@@ -158,7 +157,7 @@ namespace QuantBook.Models.Options
 
             double vol = (high + low) * 0.5; // 2.0
             int count = 0;
-            while(vol - low > 0.0001 && count < 100_000)
+            while (vol - low > 0.0001 && count < 100_000)
             {
                 double impliedPrice = BlackScholes(optionType, spot, strike, rate, carry, maturity, vol);
                 if (impliedPrice < price)
@@ -169,6 +168,113 @@ namespace QuantBook.Models.Options
                 count++;
             }
             return vol;
+        }
+
+        public static double American_BaroneAdesiWhaley(OptionType optionType, double spot, double strike, double rate, double divYield, double maturity, double vol)
+        {
+            double carry = rate - divYield;
+            return optionType == OptionType.PUT ? AmericanPut_BaroneAdesiWhaley(spot, strike, rate, carry, maturity, vol) : AmericanCall_BaroneAdesiWhaley(spot, strike, rate, carry, maturity, vol);
+        }
+        
+        private static double AmericanCall_BaroneAdesiWhaley(double spot, double strike, double rate, double carry, double maturity, double volatility)
+        {
+            // When b>=r the american call price is equal to the european clall price for generalized Black-Scholes Formula
+            if (carry >= rate) return BlackScholes(OptionType.CALL, spot, strike, rate, carry, maturity, volatility);
+
+            double sk = AmericanCall_NewtonRaphson(strike, rate, carry, maturity, volatility);
+            double d1 = d1_(spot, strike, carry, volatility, maturity);
+            double q2 = q2_(carry, rate, volatility, maturity);
+                   
+            double A2 = (sk / q2) * (1.0 - Math.Exp((carry - rate) * maturity) * CummulativeNormal(d1));
+
+            return spot < sk
+                ? BlackScholes(OptionType.CALL, spot, strike, rate, carry, maturity, volatility) + A2 * Math.Pow(spot / sk, q2)
+                : spot - strike;         
+        }
+
+        private static double AmericanPut_BaroneAdesiWhaley(double spot, double strike, double rate, double carry, double maturity, double volatility)
+        {
+            // When b>=r the american call price is equal to the european clall price for generalized Black-Scholes Formula
+            if (carry >= rate) return BlackScholes(OptionType.PUT, spot, strike, rate, carry, maturity, volatility);
+
+            double sk = AmericanPut_NewtonRaphson(strike, rate, carry, maturity, volatility);
+            double d1 = d1_(spot, strike, carry, volatility, maturity);
+            double q1 = q1_(carry, rate, volatility, maturity);
+            double A1 = -(sk  / q1) * (1.0 - Math.Exp((carry - rate) * maturity)) * CummulativeNormal(-d1);
+
+            return spot > sk
+                ? BlackScholes(OptionType.PUT, spot, strike, rate, carry, maturity, volatility) + A1 * Math.Pow(spot / sk, q1)
+                : strike - spot;
+        }      
+
+        static double N_(double carry, double vol) => 2 * carry / Math.Pow(vol, 2);
+        static double M_(double rate, double vol) => 2 * rate / Math.Pow(vol, 2);
+        static double L_(double rate, double maturity) => 1 - Math.Exp(-rate * maturity);   
+        static double q2_(double carry, double rate, double vol, double maturity) => q2_(carry, rate, vol, maturity, L_(rate, maturity));
+        static double q2_(double carry, double rate, double vol, double maturity, double L)
+            => -(N_(carry, vol) - 1.0) + Math.Sqrt(Math.Pow((N_(carry, vol) - 1.0), 2) + 4 * M_(rate, vol) / L) / 2.0;
+
+        static double q1_(double carry, double rate, double vol, double maturity) => q1_(carry, rate, vol, maturity, L_(rate, maturity));
+        static double q1_(double carry, double rate, double vol, double maturity, double L)
+       => ((N_(carry, vol) - 1.0) - Math.Sqrt(Math.Pow((N_(carry, vol) - 1.0), 2) + 4 * M_(rate, vol) / L)) / 2.0;
+
+        private static double AmericanCall_NewtonRaphson(double strike, double rate, double carry, double maturity, double volatility)
+        {
+            double q2u = q2_(carry, rate, volatility, maturity, 1);
+            double su = strike / (1.0 - 1.0 / q2u);
+            double h2 = (carry * maturity + 2.0 * volatility * Math.Sqrt(maturity)) * strike / (su - strike);
+            double spot = strike + (su - strike) * (1.0 - Math.Exp(h2));
+
+            double d1 = d1_(spot, strike, carry, volatility, maturity);
+            double q2 = q2_(carry, rate, volatility, maturity);
+            double lhs = lhs_(spot, strike);
+            double rhs = rhs_(strike, rate, carry, maturity, volatility, q2, spot, d1);
+            double bi = bi_(carry, rate, maturity, d1, q2, volatility);
+
+            while (Math.Abs((lhs - rhs) / strike) > 0.000001)
+            {
+                spot = (strike + rhs - bi * spot) / (1.0 - bi);
+                d1 = d1_(spot, strike, carry, volatility, maturity);
+                lhs = lhs_(spot, strike);
+                rhs = rhs_(strike, rate, carry, maturity, volatility, q2, spot, d1);
+                bi = bi_(carry, rate, maturity, d1, q2, volatility);
+            }
+            return spot;
+
+            double lhs_(double spot_, double strike_) => spot_ - strike_;
+            double rhs_(double strike_, double rate_, double carry_, double maturity_, double volatility_, double q2_, double spot_, double d1_) => BlackScholes(OptionType.CALL, spot_, strike_, rate_, carry_, maturity_, volatility_) + (1.0 - Math.Exp((carry_ - rate_) * maturity_) * CummulativeNormal(d1_)) * spot_ / q2_;
+            double bi_(double carry_, double rate_, double maturity_, double d1_, double q2_, double volatility_) => 
+                Math.Exp((carry_ - rate_) * maturity_) * CummulativeNormal(d1_) * (1.0 - 1.0 / q2_) +
+                (1.0 - Math.Exp((carry_ - rate_) * maturity_) * NormalDensity(d1_) / (volatility_ * Math.Sqrt(maturity_))) / q2_;
+        }
+        private static double AmericanPut_NewtonRaphson(double strike, double rate, double carry, double maturity, double volatility)
+        {            
+            double q1u = q1_(carry, rate, volatility, maturity, 1);
+            double su = strike / (1.0 - 1.0 / q1u);
+            double h1 = (carry * maturity - 2.0 * volatility * Math.Sqrt(maturity)) * strike / (strike - su);
+            double spot = su + (strike - su) * Math.Exp(h1);
+
+            double d1 = d1_(spot, strike, carry, volatility, maturity);
+            double q1 = q1_(carry, rate, volatility, maturity);
+            double lhs = lhs_(spot, strike);
+            double rhs = rhs_(strike, rate, carry, maturity, volatility, q1, spot, d1);
+            double bi = bi_(carry, rate, maturity, d1, q1, volatility);
+
+            while(Math.Abs((lhs - rhs) / strike) > 0.000001)
+            {
+                spot = (strike - rhs + bi * spot) / (1.0 + bi);
+                d1 = d1_(spot, strike, carry, volatility, maturity);
+                lhs = lhs_(spot, strike);
+                rhs = rhs_(strike, rate, carry, maturity, volatility, q1, spot, d1);
+                bi = bi_(carry, rate, maturity, d1, q1, volatility);
+            }
+            return spot;
+
+            double lhs_(double spot_, double strike_) => strike_ - spot_;
+            double rhs_(double strike_, double rate_, double carry_, double maturity_, double volatility_, double q1_, double spot_, double d1_) => BlackScholes(OptionType.PUT, spot_, strike_, rate_, carry_, maturity_, volatility_) - (1.0 - Math.Exp((carry_ - rate_) * maturity_) * CummulativeNormal(-d1_)) * spot_ / q1_;
+            double bi_(double carry_, double rate_, double maturity_, double d1_, double q1_, double volatility_) => 
+                -Math.Exp((carry_ - rate_) * maturity_) * CummulativeNormal(-d1_) * (1.0 - 1.0 / q1) -
+              (1.0 + Math.Exp((carry_ - rate_) * maturity_) * NormalDensity(-d1_) / (volatility_ * Math.Sqrt(maturity_))) / q1;
         }
     }
 }
