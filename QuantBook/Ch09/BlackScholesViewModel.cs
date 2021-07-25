@@ -106,30 +106,26 @@ namespace QuantBook.Ch09
         }
 
         public void CalculatePrice()
-        {
-            OptionType optionType = optionInputTable.Rows[0]["Value"].ToString() == "Call" ? OptionType.CALL : OptionType.PUT;
-            double spot = Convert.ToDouble(OptionInputTable.Rows[1]["Value"]);
-            double strike = Convert.ToDouble(OptionInputTable.Rows[2]["Value"]);
-            double rate = Convert.ToDouble(OptionInputTable.Rows[3]["Value"]);
-            double carry = Convert.ToDouble(OptionInputTable.Rows[4]["Value"]);
-            double vol = Convert.ToDouble(OptionInputTable.Rows[5]["Value"]);
+        {           
+            (OptionType optionType, double spot, double strike, double rate, double carry, double vol) = FromUI();
             OptionTable.Clear();
             for (int i = 0; i < 10; i++)
             {
                 // break out into 10 time slices until maturity
                 double maturity = (i + 1.0) / 10.0;
-                
+
                 //price & greeks
-                double price = OptionHelper.BlackScholes(optionType, spot, strike, rate, carry, maturity, vol);
-                double delta = OptionHelper.BlackScholes_Delta(optionType, spot, strike, rate, carry, maturity, vol);
-                double gamma = OptionHelper.BlackScholes_Gamma(spot, strike, rate, carry, maturity, vol);
-                double theta = OptionHelper.BlackScholes_Theta(optionType, spot, strike, rate, carry, maturity, vol);
-                double rho = OptionHelper.BlackScholes_Rho(optionType, spot, strike, rate, carry, maturity, vol);
-                double vega = OptionHelper.BlackScholes_Vega(spot, strike, rate, carry, maturity, vol);
-                OptionTable.Rows.Add(maturity, price, delta, gamma, theta, rho, vega);
+                _ = OptionTable.Rows.Add(
+                    maturity,
+                    OptionHelper.BlackScholes(optionType, spot, strike, rate, carry, maturity, vol),
+                    OptionHelper.BlackScholes_Delta(optionType, spot, strike, rate, carry, maturity, vol),
+                    OptionHelper.BlackScholes_Gamma(spot, strike, rate, carry, maturity, vol),
+                    OptionHelper.BlackScholes_Theta(optionType, spot, strike, rate, carry, maturity, vol),
+                    OptionHelper.BlackScholes_Rho(optionType, spot, strike, rate, carry, maturity, vol),
+                    OptionHelper.BlackScholes_Vega(spot, strike, rate, carry, maturity, vol));
             }
         }
-        
+  
         public void PlotPrice() => Plot(GreekTypeEnum.Price, "Price", 1, 1);
         public void PlotDelta() => Plot(GreekTypeEnum.Delta, "Delta", 1, 1);
         public void PlotGamma() => Plot(GreekTypeEnum.Gamma, "Gamma", 2, 3);
@@ -139,20 +135,26 @@ namespace QuantBook.Ch09
         private void Plot(GreekTypeEnum greekType, string zLabel, int zDecimalPlaces, int zTickDecimalPlaces)
         {
             ZLabel = zLabel;
-            OptionType optionType = optionInputTable.Rows[0]["Value"].ToString() == "Call" ? OptionType.CALL : OptionType.PUT;
-            double spot = Convert.ToDouble(OptionInputTable.Rows[1]["Value"]);
-            double strike = Convert.ToDouble(OptionInputTable.Rows[2]["Value"]);
-            double rate = Convert.ToDouble(OptionInputTable.Rows[3]["Value"]);
-            double carry = Convert.ToDouble(OptionInputTable.Rows[4]["Value"]);
-            double vol = Convert.ToDouble(OptionInputTable.Rows[5]["Value"]);
+            (OptionType optionType, double spot, double strike, double rate, double carry, double vol) = FromUI();
             DataCollection.Clear();
-            var ds = new DataSeries3D();
-            ds.LineColor = Brushes.Black;
+            DataSeries3D ds = new DataSeries3D() { LineColor = Brushes.Black };
             double[] z = OptionPlotHelper.PlotGreeks(ds, greekType, optionType, strike, rate, carry, vol);
             Zmin = Math.Round(z[0], zDecimalPlaces);
             Zmax = Math.Round(z[1], zDecimalPlaces);
             ZTick = Math.Round((z[1] - z[0])/ 5.0, zTickDecimalPlaces);
             DataCollection.Add(ds);
         }
-    }    
+
+        private (OptionType optionType, double spot, double strike, double rate, double carry, double vol) FromUI()
+        {
+            OptionType optionType = optionInputTable.Rows[0]["Value"].ToString() == "Call" ? OptionType.CALL : OptionType.PUT;
+            double spot = Convert.ToDouble(OptionInputTable.Rows[1]["Value"]);
+            double strike = Convert.ToDouble(OptionInputTable.Rows[2]["Value"]);
+            double rate = Convert.ToDouble(OptionInputTable.Rows[3]["Value"]);
+            double carry = Convert.ToDouble(OptionInputTable.Rows[4]["Value"]);
+            double vol = Convert.ToDouble(OptionInputTable.Rows[5]["Value"]);
+            return (optionType, spot, strike, rate, carry, vol);
+        }
+
+    }
 }

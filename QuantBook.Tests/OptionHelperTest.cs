@@ -183,6 +183,32 @@ namespace QuantBook.Tests
             Assert.That(vega, Is.EqualTo(27.5649).Within(1).Percent);
         }
 
+        [Test]
+        public void WhenCalculatingImpliedVol()
+        {
+            // stock with 6 months expiration, stock price is 100, strike price is 110, risk free interest rate 0.1 per year, continuous dividend yield 0.06 and volatility is 0.3 
+
+            // Generalised model we use b differently
+
+            // b = r: standard Black Scholes 1973 stock option model
+            // b = r - q: gives the Merton 19973 stock option model with contionuous dividend yield q
+
+            var spot = 100;
+            var strike = 110;
+            var r = 0.1;
+            var q = 0.06;
+            var b = r - q;
+
+            double[] prices = new double[] { 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6 };
+            for (int i = 0; i < 10; i++)
+            {
+                double maturity = (i + 1.0) / 10.0;
+                var price = prices[i];
+                var impliedVol = OptionHelper.BlackScholes_ImpliedVol(OptionType.CALL, spot, strike, r, b, maturity, price);
+                Console.WriteLine($"ImpliedVol for price {price} and maturity {maturity} is {impliedVol}");
+            }
+        }
+
         private static void AssertZValue(double[] z, int rounding)
         {
             var zmin = Math.Round(z[0], rounding);

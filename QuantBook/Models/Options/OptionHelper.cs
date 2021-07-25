@@ -26,7 +26,7 @@ namespace QuantBook.Models.Options
         // Standard Normal Density function        
         private static double NormalDensity(double z) => Math.Exp(-z * z * 0.5) / Math.Sqrt(2.0 * PI);
 
-        static double d1Func(double spot, double strike, double carry, double volatility, double maturity) =>          
+        static double d1Func(double spot, double strike, double carry, double volatility, double maturity) =>         
             (Math.Log(spot / strike) + (carry + (volatility * volatility) / 2) * maturity) 
                         / 
             (volatility * Math.Sqrt(maturity));
@@ -84,7 +84,6 @@ namespace QuantBook.Models.Options
             }
             return option.Value;
         }
-  
 
         public static double BlackScholes_Gamma(double spot, double strike, double rate, double carry, double maturity, double volatility)
         {
@@ -148,6 +147,28 @@ namespace QuantBook.Models.Options
         {
             double d1 = d1Func(spot, strike, carry, vol, maturity);
             return spot * Math.Exp((carry - rate) * maturity) * CummulativeNormal(d1) * Math.Sqrt(maturity);
+        }
+
+        public static double BlackScholes_ImpliedVol(OptionType optionType, double spot, double strike, double rate, double carry, double maturity, double price)
+        {
+            double low = 0.0;
+            double high = 4.0;
+            if (BlackScholes(optionType, spot, strike, rate, carry, maturity, high) < price) return high;
+            if (BlackScholes(optionType, spot, strike, rate, carry, maturity, low) > price) return low;
+
+            double vol = (high + low) * 0.5; // 2.0
+            int count = 0;
+            while(vol - low > 0.0001 && count < 100_000)
+            {
+                double impliedPrice = BlackScholes(optionType, spot, strike, rate, carry, maturity, vol);
+                if (impliedPrice < price)
+                    low = vol;
+                else if (impliedPrice > price)
+                    high = vol;
+                vol = (high + low) * 0.5;
+                count++;
+            }
+            return vol;
         }
     }
 }

@@ -74,5 +74,40 @@ namespace QuantBook.Models.Options
             ds.PointArray = pts;
             return new double[] { zmin, zmax };
         }
+
+        public static double[] PlotImpliedVol(DataSeries3D ds, OptionType optionType, double spot, double price, double rate, double carry)
+        {
+            double xmin = 0.1;
+            double xmax = 1.0;
+            double ymin = 9.5;
+            double ymax = 10.5;
+            ds.XLimitMin = xmin;
+            ds.YLimitMin = ymin;
+            ds.XSpacing = 0.03;
+            ds.YSpacing = 0.05;
+            ds.XNumber = Convert.ToInt16((xmax - xmin) / ds.XSpacing) + 1;
+            ds.YNumber = Convert.ToInt16((ymax - ymin) / ds.YSpacing) + 1;
+            double zmin = 10_000;
+            double zmax = -10_000;
+            Point3D[,] pts = new Point3D[ds.XNumber, ds.YNumber];
+            for (int i = 0; i < ds.XNumber; i++)
+            {
+                for (int j = 0; j < ds.YNumber; j++)
+                {
+                    double x = ds.XLimitMin + i * ds.XSpacing;
+                    double y = ds.YLimitMin + j * ds.YSpacing;
+                    double z = double.NaN;
+                    z = OptionHelper.BlackScholes_ImpliedVol(optionType, spot, y, rate, carry, x, price);
+                    if(!double.IsNaN(z))
+                    {
+                        pts[i, j] = new Point3D(x, y, z);
+                        zmin = Math.Min(zmin, z);
+                        zmax = Math.Max(zmax, z);
+                    }
+                }
+            }
+            ds.PointArray = pts;
+            return new double[] { zmin, zmax };
+        }
     }
 }
