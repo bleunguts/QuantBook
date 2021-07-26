@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 namespace QuantBook.Models.Options
 {
     public enum OptionType { CALL, PUT };
+    public enum BarrierType { DownIn, UpIn, DownOut, UpOut}
     public class OptionHelper
     {
         private const double ONEOVERSQRT2PI = 0.39894228;
@@ -274,6 +275,197 @@ namespace QuantBook.Models.Options
             double bi_(double carry_, double rate_, double maturity_, double d1_, double q1_, double volatility_) => 
                 -Math.Exp((carry_ - rate_) * maturity_) * CummulativeNormal(-d1_) * (1.0 - 1.0 / q1) -
               (1.0 + Math.Exp((carry_ - rate_) * maturity_) * NormalDensity(-d1_) / (volatility_ * Math.Sqrt(maturity_))) / q1;
+        }
+
+        public static double? BarrierOptions(OptionType optionType, BarrierType barrierType, double spot, double strike, double rate, double divYield, double maturity, double vol, double barrierLevel, double rebate)
+        {
+            switch (optionType)
+            {
+                case OptionType.PUT:
+                    return BarrierOptionsPut(barrierType, spot, strike, rate, divYield, maturity, vol, barrierLevel, rebate);
+                case OptionType.CALL:
+                    return BarrierOptionsCall(barrierType, spot, strike, rate, divYield, maturity, vol, barrierLevel, rebate);
+            }
+
+            throw new NotSupportedException($"OptionType {optionType} and BarrierType {barrierType} not supported.");
+        }
+
+        private static double? BarrierOptionsCall(BarrierType barrierType, double spot, double strike, double rate, double divYield, double maturity, double vol, double barrierLevel, double rebate)
+        {
+            switch(barrierType)
+            {
+                case BarrierType.DownIn:
+                    if (!(spot > barrierLevel)) return null;
+
+                    if (strike >= barrierLevel)
+                        return C(1, 1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                                E(1, rebate, barrierLevel, spot, strike, vol, maturity, rate, divYield);
+                    else
+                        return A(1, barrierLevel, spot, strike, vol, maturity, rate, divYield) -
+                                B(1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                                D(1, 1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                                E(1, rebate, barrierLevel, spot, strike, vol, maturity, rate, divYield);
+
+                case BarrierType.UpIn:
+                    if (!(spot < barrierLevel)) return null;
+
+                    if (strike >= barrierLevel)
+                        return A(1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                            E(-1, rebate, barrierLevel, spot, strike, vol, maturity, rate, divYield);
+                    else
+                        return B(1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                            C(-1, 1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                            D(-1, 1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                            E(-1, rebate, barrierLevel, spot, strike, vol, maturity, rate, divYield);
+                case BarrierType.DownOut:
+                    if (!(spot > barrierLevel)) return null;
+                    if (strike > barrierLevel)
+                        return A(1, barrierLevel, spot, strike, vol, maturity, rate, divYield) -
+                            C(1, 1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                            F(1, rebate, barrierLevel, spot, strike, vol, maturity, rate, divYield);
+                    else
+                        return B(1, barrierLevel, spot, strike, vol, maturity, rate, divYield) -
+                            D(1, 1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                            F(1, rebate, barrierLevel, spot, strike, vol, maturity, rate, divYield);
+
+                case BarrierType.UpOut:
+                    if (!(spot < barrierLevel)) return null;
+                    if (strike > barrierLevel)
+                        return F(-1, rebate, barrierLevel, spot, strike, vol, maturity, rate, divYield);
+                    else
+                        return A(1, barrierLevel, spot, strike, vol, maturity, rate, divYield) -
+                            B(1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                            C(-1, 1, barrierLevel, spot, strike, vol, maturity, rate, divYield) -
+                            D(-1, 1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                            F(-1, rebate, barrierLevel, spot, strike, vol, maturity, rate, divYield);
+            }
+
+            throw new NotSupportedException($"BarrierType {barrierType} not supported.");
+        }
+
+        private static double? BarrierOptionsPut(BarrierType barrierType, double spot, double strike, double rate, double divYield, double maturity, double vol, double barrierLevel, double rebate)
+        {
+            switch (barrierType)
+            {
+                case BarrierType.DownIn:
+                    if (!(spot > barrierLevel)) return null;
+
+                    if (strike >= barrierLevel)
+                        return B(-1, barrierLevel, spot, strike, vol, maturity, rate, divYield) -
+                                C(1, -1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                                D(1, -1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                                E(1, rebate, barrierLevel, spot, strike, vol, maturity, rate, divYield);
+                    else
+                        return A(-1, barrierLevel, spot, strike, vol, maturity, rate, divYield) -                        
+                                E(1, rebate, barrierLevel, spot, strike, vol, maturity, rate, divYield);
+
+                case BarrierType.UpIn:
+                    if (!(spot < barrierLevel)) return null;
+
+                    if (strike >= barrierLevel)
+                        return A(-1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                            B(-1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                            D(-1, -1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                            E(-1, rebate, barrierLevel, spot, strike, vol, maturity, rate, divYield);
+                    else
+                        return C(-1, -1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                            E(-1, rebate, barrierLevel, spot, strike, vol, maturity, rate, divYield);
+                case BarrierType.DownOut:
+                    if (!(spot > barrierLevel)) return null;
+                    if (strike > barrierLevel)
+                        return A(-1, barrierLevel, spot, strike, vol, maturity, rate, divYield) -
+                            B(-1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                            C(1, -1, barrierLevel, spot, strike, vol, maturity, rate, divYield) -
+                            D(1, -1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                            F(1, rebate, barrierLevel, spot, strike, vol, maturity, rate, divYield);
+                    else
+                        return F(1, rebate, barrierLevel, spot, strike, vol, maturity, rate, divYield);
+
+                case BarrierType.UpOut:
+                    if (!(spot < barrierLevel)) return null;
+                    if (strike > barrierLevel)
+                        return B(-1, barrierLevel, spot, strike, vol, maturity, rate, divYield) -
+                            D(-1, -1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                            F(-1, rebate, barrierLevel, spot, strike, vol, maturity, rate, divYield);
+                    else
+                        return A(-1, barrierLevel, spot, strike, vol, maturity, rate, divYield) -
+                            C(-1, -1, barrierLevel, spot, strike, vol, maturity, rate, divYield) +
+                            F(-1, rebate, barrierLevel, spot, strike, vol, maturity, rate, divYield);
+            }
+
+            throw new NotSupportedException($"BarrierType {barrierType} not supported.");
+        }
+
+        private static double fac_(double vol, double maturity) => vol * Math.Sqrt(maturity);
+        private static double m_(double rate, double divYield, double vol) => (rate - divYield - (Math.Pow(vol, 2)) / 2) / Math.Pow(vol, 2);
+
+        private static double hs_(double barrierLevel, double spot) => barrierLevel / spot;
+
+        private static double A(double phi, double barrierLevel, double spot, double strike, double vol, double maturity, double rate, double divYield)
+        {
+            double fac = fac_(vol, maturity);
+            double m = m_(rate, divYield, vol);
+            double x1 = Math.Log(spot / strike) / fac + (1.0 + m) * fac;
+            return phi * spot * Math.Exp(-divYield * maturity) * CummulativeNormal(phi * x1) -
+                phi * strike * Math.Exp(-rate * maturity) * CummulativeNormal(phi * x1 - phi * fac);
+        }
+
+        private static double B(double phi, double barrierLevel, double spot, double strike, double vol, double maturity, double rate, double divYield)
+        {
+            double fac = fac_(vol, maturity);
+            double m = m_(rate, divYield, vol);
+            double x2 = Math.Log(spot / barrierLevel) / fac + (1.0 + m) * fac;
+            return phi * spot * Math.Exp(-divYield * maturity) * CummulativeNormal(phi * x2) -
+               phi * strike * Math.Exp(-rate * maturity) * CummulativeNormal(phi * x2 - phi * fac_(vol, maturity));
+        }
+
+        private static double C(double phi, double eta, double barrierLevel, double spot, double strike, double vol, double maturity, double rate, double divYield)
+        {
+            double hs = hs_(barrierLevel, spot);
+            double fac = fac_(vol, maturity);
+            double m = m_(rate, divYield, vol);
+
+            double y1 = Math.Log(barrierLevel * barrierLevel / strike / spot) / fac + (1.0 + m) * fac;
+            return phi * spot * Math.Exp(-divYield * maturity) * Math.Pow(hs, 2 * m) * Math.Pow(hs, 2) * CummulativeNormal(eta * y1) -
+                phi * strike * Math.Exp(-rate * maturity) * Math.Pow(hs, 2 * m) * CummulativeNormal(eta * y1 - eta * fac);
+        }
+
+        private static double D(double phi, double eta, double barrierLevel, double spot, double strike, double vol, double maturity, double rate, double divYield)
+        {
+            double hs = hs_(barrierLevel, spot);
+            double fac = fac_(vol, maturity);
+            double m = m_(rate, divYield, vol);
+
+            double y2 = Math.Log(barrierLevel / spot) / fac + (1.0 + m) * fac;
+            return phi * spot * Math.Exp(-divYield * maturity) * Math.Pow(hs, 2 * m) * Math.Pow(hs, 2) * CummulativeNormal(eta * y2) - phi * strike * Math.Exp(-rate * maturity) * Math.Pow(hs, 2 * m) * CummulativeNormal(eta * y2 - eta * fac);
+
+        }
+
+        private static double E(double eta, double rebate, double barrierLevel, double spot, double strike, double vol, double maturity, double rate, double divYield)
+        {
+            if (rebate <= 0.0) return 0.0;
+
+            double hs = hs_(barrierLevel, spot);
+            double fac = fac_(vol, maturity);
+            double m = m_(rate, divYield, vol);
+
+            double x2 = Math.Log(spot / barrierLevel) / fac + (1.0 + m) * fac;
+            double y2 = Math.Log(barrierLevel / spot) / fac + (1.0 + m) * fac;
+            return rebate * Math.Exp(-rate * maturity) * CummulativeNormal(eta * y2 - eta * fac) - Math.Pow(hs, 2 * m) * CummulativeNormal(eta * y2 - eta * fac);
+        }
+
+        private static double F(double eta, double rebate, double barrierLevel, double spot, double strike, double vol, double maturity, double rate, double divYield)
+        {
+            if (rebate <= 0.0) return 0.0;
+
+            double hs = hs_(barrierLevel, spot);
+            double fac = fac_(vol, maturity);
+            double m = m_(rate, divYield, vol);
+
+
+            double lambda = Math.Sqrt(Math.Pow(m, 2) + 2.0 * (rate - divYield) / Math.Pow(vol, 2));
+            double z = Math.Log(barrierLevel / spot) / fac + lambda * fac;
+            return rebate * (Math.Pow(hs, m + lambda) * CummulativeNormal(eta * z) - Math.Pow(hs, m - lambda) * CummulativeNormal(eta * z - 2.0 * eta * lambda * fac));
         }
     }
 }

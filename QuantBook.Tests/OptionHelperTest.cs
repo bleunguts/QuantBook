@@ -220,7 +220,7 @@ namespace QuantBook.Tests
         }     
 
         [Test]
-        public void WhenPricingAmericanOption()
+        public void WhenPricingAnAmericanOption()
         {
             var spot = 90.0;
             var strike = 100.0;
@@ -236,6 +236,27 @@ namespace QuantBook.Tests
             var putPrice = OptionHelper.American_BaroneAdesiWhaley(OptionType.PUT, spot, strike, rate, divYield, maturity, vol);
             Console.WriteLine($"Price of put american option is {putPrice}");
             Assert.That(putPrice, Is.EqualTo(10.00).Within(1).Percent);
+        }
+
+        [Test]
+        public void WhenPricingABarrierOption()
+        {
+            var spot = 100.0;
+            var strike = 100.0;
+            var rate = 0.1;
+            var yield = 0.06;
+            var maturity = 0.1;
+            var vol = 0.3;
+            var barrier = 90;
+            var rebate = 0;
+
+            var price = OptionHelper.BarrierOptions(OptionType.CALL, BarrierType.DownIn, spot, strike, rate, yield, maturity, vol, barrier, rebate);
+            Console.WriteLine($"Price of call barrier option is {price}");
+            Assert.That(price, Is.EqualTo(0.0444).Within(1).Percent);
+
+            var putPrice = OptionHelper.BarrierOptions(OptionType.PUT, BarrierType.DownIn, spot, strike, rate, yield, maturity, vol, barrier, rebate);
+            Console.WriteLine($"Price of put barrier option is {putPrice}");
+            Assert.That(putPrice, Is.EqualTo(2.65).Within(1).Percent);
         }
     }
 }
