@@ -213,7 +213,6 @@ namespace QuantBook.Models.Options
         static double q2_(double carry, double rate, double vol, double maturity) => q2_(carry, rate, vol, maturity, L_(rate, maturity));
         static double q2_(double carry, double rate, double vol, double maturity, double L)
             => -(N_(carry, vol) - 1.0) + Math.Sqrt(Math.Pow((N_(carry, vol) - 1.0), 2) + 4 * M_(rate, vol) / L) / 2.0;
-
         static double q1_(double carry, double rate, double vol, double maturity) => q1_(carry, rate, vol, maturity, L_(rate, maturity));
         static double q1_(double carry, double rate, double vol, double maturity, double L)
        => ((N_(carry, vol) - 1.0) - Math.Sqrt(Math.Pow((N_(carry, vol) - 1.0), 2) + 4 * M_(rate, vol) / L)) / 2.0;
