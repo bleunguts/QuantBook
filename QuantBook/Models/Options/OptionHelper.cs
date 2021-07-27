@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace QuantBook.Models.Options
 {
-    public enum OptionType { CALL, PUT };
+    public enum OptionType { Call, Put };
     public enum BarrierType { DownIn, UpIn, DownOut, UpOut}
     public class OptionHelper
     {
@@ -58,10 +58,10 @@ namespace QuantBook.Models.Options
             double? option = null;
             switch (optionType)
             {
-                case OptionType.PUT:
+                case OptionType.Put:
                     option = (strike * Math.Exp(-rate * maturity) * CummulativeNormal(-d2)) - (spot * Math.Exp((carry - rate) * maturity) * CummulativeNormal(-d1));
                     break;
-                case OptionType.CALL:
+                case OptionType.Call:
                     option = (spot * Math.Exp((carry - rate) * maturity) * CummulativeNormal(d1)) - (strike * Math.Exp(-rate * maturity) * CummulativeNormal(d2));
                     break;
             }
@@ -75,10 +75,10 @@ namespace QuantBook.Models.Options
             double? option = null;
             switch (optionType)
             {
-                case OptionType.PUT:
+                case OptionType.Put:
                     option = Math.Exp((carry - rate) * maturity) * (CummulativeNormal(d1) - 1.0);
                     break;
-                case OptionType.CALL:
+                case OptionType.Call:
                     option = Math.Exp((carry - rate) * maturity) * (CummulativeNormal(d1));
                     break;
             }
@@ -101,13 +101,13 @@ namespace QuantBook.Models.Options
             double? option = null;
             switch (optionType)
             {
-                case OptionType.PUT:
+                case OptionType.Put:
                     var p1 = (spot * Math.Exp((carry - rate) * maturity) * NormalDensity(d1) * volatility) / (2 * Math.Sqrt(maturity));
                     var p2 = (carry - rate) * spot * Math.Exp((carry - rate) * maturity) * CummulativeNormal(-d1);
                     var p3 = rate * strike * Math.Exp(-rate * maturity) * CummulativeNormal(-d2);
                     option = -p1 + p2 + p3;
                     break;
-                case OptionType.CALL:
+                case OptionType.Call:
                     var c1 = (spot * Math.Exp((carry - rate) * maturity) * NormalDensity(d1) * volatility) / (2 * Math.Sqrt(maturity));
                     var c2 = (carry - rate) * spot * Math.Exp((carry - rate) * maturity) * CummulativeNormal(d1);
                     var c3 = rate * strike * Math.Exp(-rate * maturity) * CummulativeNormal(d2);
@@ -132,10 +132,10 @@ namespace QuantBook.Models.Options
             double? option = null;
             switch (optionType)
             {
-                case OptionType.PUT:
+                case OptionType.Put:
                     option = -maturity * strike * Math.Exp(-rate * maturity) * CummulativeNormal(-d2);
                     break;
-                case OptionType.CALL:
+                case OptionType.Call:
                     option = maturity * strike * Math.Exp(-rate * maturity) * CummulativeNormal(d2);
                     break;
             }
@@ -174,13 +174,13 @@ namespace QuantBook.Models.Options
         public static double American_BaroneAdesiWhaley(OptionType optionType, double spot, double strike, double rate, double divYield, double maturity, double vol)
         {
             double carry = rate - divYield;
-            return optionType == OptionType.PUT ? AmericanPut_BaroneAdesiWhaley(spot, strike, rate, carry, maturity, vol) : AmericanCall_BaroneAdesiWhaley(spot, strike, rate, carry, maturity, vol);
+            return optionType == OptionType.Put ? AmericanPut_BaroneAdesiWhaley(spot, strike, rate, carry, maturity, vol) : AmericanCall_BaroneAdesiWhaley(spot, strike, rate, carry, maturity, vol);
         }
         
         private static double AmericanCall_BaroneAdesiWhaley(double spot, double strike, double rate, double carry, double maturity, double volatility)
         {
             // When b>=r the american call price is equal to the european clall price for generalized Black-Scholes Formula
-            if (carry >= rate) return BlackScholes(OptionType.CALL, spot, strike, rate, carry, maturity, volatility);
+            if (carry >= rate) return BlackScholes(OptionType.Call, spot, strike, rate, carry, maturity, volatility);
 
             double sk = AmericanCall_NewtonRaphson(strike, rate, carry, maturity, volatility);
             double d1 = d1_(spot, strike, carry, volatility, maturity);
@@ -189,14 +189,14 @@ namespace QuantBook.Models.Options
             double A2 = (sk / q2) * (1.0 - Math.Exp((carry - rate) * maturity) * CummulativeNormal(d1));
 
             return spot < sk
-                ? BlackScholes(OptionType.CALL, spot, strike, rate, carry, maturity, volatility) + A2 * Math.Pow(spot / sk, q2)
+                ? BlackScholes(OptionType.Call, spot, strike, rate, carry, maturity, volatility) + A2 * Math.Pow(spot / sk, q2)
                 : spot - strike;         
         }
 
         private static double AmericanPut_BaroneAdesiWhaley(double spot, double strike, double rate, double carry, double maturity, double volatility)
         {
             // When b>=r the american call price is equal to the european clall price for generalized Black-Scholes Formula
-            if (carry >= rate) return BlackScholes(OptionType.PUT, spot, strike, rate, carry, maturity, volatility);
+            if (carry >= rate) return BlackScholes(OptionType.Put, spot, strike, rate, carry, maturity, volatility);
 
             double sk = AmericanPut_NewtonRaphson(strike, rate, carry, maturity, volatility);
             double d1 = d1_(spot, strike, carry, volatility, maturity);
@@ -204,7 +204,7 @@ namespace QuantBook.Models.Options
             double A1 = -(sk  / q1) * (1.0 - Math.Exp((carry - rate) * maturity)) * CummulativeNormal(-d1);
 
             return spot > sk
-                ? BlackScholes(OptionType.PUT, spot, strike, rate, carry, maturity, volatility) + A1 * Math.Pow(spot / sk, q1)
+                ? BlackScholes(OptionType.Put, spot, strike, rate, carry, maturity, volatility) + A1 * Math.Pow(spot / sk, q1)
                 : strike - spot;
         }      
 
@@ -242,7 +242,7 @@ namespace QuantBook.Models.Options
             return spot;
 
             double lhs_(double spot_, double strike_) => spot_ - strike_;
-            double rhs_(double strike_, double rate_, double carry_, double maturity_, double volatility_, double q2_, double spot_, double d1_) => BlackScholes(OptionType.CALL, spot_, strike_, rate_, carry_, maturity_, volatility_) + (1.0 - Math.Exp((carry_ - rate_) * maturity_) * CummulativeNormal(d1_)) * spot_ / q2_;
+            double rhs_(double strike_, double rate_, double carry_, double maturity_, double volatility_, double q2_, double spot_, double d1_) => BlackScholes(OptionType.Call, spot_, strike_, rate_, carry_, maturity_, volatility_) + (1.0 - Math.Exp((carry_ - rate_) * maturity_) * CummulativeNormal(d1_)) * spot_ / q2_;
             double bi_(double carry_, double rate_, double maturity_, double d1_, double q2_, double volatility_) => 
                 Math.Exp((carry_ - rate_) * maturity_) * CummulativeNormal(d1_) * (1.0 - 1.0 / q2_) +
                 (1.0 - Math.Exp((carry_ - rate_) * maturity_) * NormalDensity(d1_) / (volatility_ * Math.Sqrt(maturity_))) / q2_;
@@ -271,7 +271,7 @@ namespace QuantBook.Models.Options
             return spot;
 
             double lhs_(double spot_, double strike_) => strike_ - spot_;
-            double rhs_(double strike_, double rate_, double carry_, double maturity_, double volatility_, double q1_, double spot_, double d1_) => BlackScholes(OptionType.PUT, spot_, strike_, rate_, carry_, maturity_, volatility_) - (1.0 - Math.Exp((carry_ - rate_) * maturity_) * CummulativeNormal(-d1_)) * spot_ / q1_;
+            double rhs_(double strike_, double rate_, double carry_, double maturity_, double volatility_, double q1_, double spot_, double d1_) => BlackScholes(OptionType.Put, spot_, strike_, rate_, carry_, maturity_, volatility_) - (1.0 - Math.Exp((carry_ - rate_) * maturity_) * CummulativeNormal(-d1_)) * spot_ / q1_;
             double bi_(double carry_, double rate_, double maturity_, double d1_, double q1_, double volatility_) => 
                 -Math.Exp((carry_ - rate_) * maturity_) * CummulativeNormal(-d1_) * (1.0 - 1.0 / q1) -
               (1.0 + Math.Exp((carry_ - rate_) * maturity_) * NormalDensity(-d1_) / (volatility_ * Math.Sqrt(maturity_))) / q1;
@@ -281,9 +281,9 @@ namespace QuantBook.Models.Options
         {
             switch (optionType)
             {
-                case OptionType.PUT:
+                case OptionType.Put:
                     return BarrierOptionsPut(barrierType, spot, strike, rate, divYield, maturity, vol, barrierLevel, rebate);
-                case OptionType.CALL:
+                case OptionType.Call:
                     return BarrierOptionsCall(barrierType, spot, strike, rate, divYield, maturity, vol, barrierLevel, rebate);
             }
 

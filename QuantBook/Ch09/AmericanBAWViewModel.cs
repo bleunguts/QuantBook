@@ -105,7 +105,7 @@ namespace QuantBook.Ch09
             OptionTable.Clear();
             foreach(DataRow row in InputTable.Rows)
             {
-                var optionType = row["OptionType"].ToString() == "Call" ? OptionType.CALL : OptionType.PUT;
+                var optionType = row["OptionType"].ToString() == "Call" ? OptionType.Call : OptionType.Put;
                 var price = OptionHelper.American_BaroneAdesiWhaley(
                         optionType,
                         Convert.ToDouble(row["Spot"]),

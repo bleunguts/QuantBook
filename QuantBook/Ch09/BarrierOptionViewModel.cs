@@ -86,7 +86,7 @@ namespace QuantBook.Ch09
 
         (OptionType optionType, double spot, double strike, double rate, double yield, double vol, double barrier, double rebate) FromUI()
         {
-            OptionType optionType = OptionInputTable.Rows[0]["Value"].ToString() == "Call" ? OptionType.CALL : OptionType.PUT;
+            OptionType optionType = OptionInputTable.Rows[0]["Value"].ToString() == "Call" ? OptionType.Call : OptionType.Put;
             double spot = Convert.ToDouble(OptionInputTable.Rows[1]["Value"]);
             double strike = Convert.ToDouble(OptionInputTable.Rows[2]["Value"]);
             double rate = Convert.ToDouble(OptionInputTable.Rows[3]["Value"]);

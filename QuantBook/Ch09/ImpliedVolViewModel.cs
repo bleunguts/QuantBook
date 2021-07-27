@@ -129,7 +129,7 @@ namespace QuantBook.Ch09
 
         (OptionType optionType, double spot, double strike, double rate, double carry, double vol) FromUI()
         {
-            OptionType optionType = VolInputTable.Rows[0]["Value"].ToString() == "Call" ? OptionType.CALL : OptionType.PUT;
+            OptionType optionType = VolInputTable.Rows[0]["Value"].ToString() == "Call" ? OptionType.Call : OptionType.Put;
             double spot = Convert.ToDouble(VolInputTable.Rows[1]["Value"]);
             double strike = Convert.ToDouble(VolInputTable.Rows[2]["Value"]);
             double rate = Convert.ToDouble(VolInputTable.Rows[3]["Value"]);
