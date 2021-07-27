@@ -144,13 +144,14 @@ namespace QuantBook.Ch09
             var rate = Convert.ToDouble(VolInputTable.Rows[3]["Value"]);
             var carry = Convert.ToDouble(VolInputTable.Rows[4]["Value"]);
             VolTable.Clear();
+            var (price, _, _, _, _, _) = QuantLibHelper.EuropeanOption(optionType, DateTime.Today, 1, strike, spot, rate - carry, rate, 0.3, EuropeanEngineType.Analytic);
             var prices = new double[] { 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6 };
             for (int i = 0; i < 10; i++)
             {
-                var price = prices[i] * spot;
+                var quotedPrice = prices[i] + price;
                 double maturity = (i + 1.0) / 10.0;
-                var vol = QuantLibHelper.EuropeanOptionImpliedVol(optionType, DateTime.Today, maturity, strike, spot, rate - carry, rate, price);
-                VolTable.Rows.Add(maturity, price, vol);
+                var vol = QuantLibHelper.EuropeanOptionImpliedVol(optionType, DateTime.Today, maturity, strike, spot, rate - carry, rate, quotedPrice);
+                VolTable.Rows.Add(maturity, quotedPrice, vol);
             }
 
         }

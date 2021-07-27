@@ -116,7 +116,7 @@ namespace QuantBook.Models.Options
 
             VanillaOption option = MakeOption(payoff, exercise, u, qTS, rTS, volTS, EuropeanEngineType.Analytic);            
             GeneralizedBlackScholesProcess stochProcess = BlackScholesMertonProcess(u, qTS, rTS, volTS);
-            return option.impliedVolatility(targetPrice, stochProcess, accuracy: 1.0e-4, maxEvaluations: 100, minVol, maxVol);
+            return option.impliedVolatility(targetPrice, stochProcess);
         }
     }
 
