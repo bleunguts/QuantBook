@@ -153,7 +153,6 @@ namespace QuantBook.Ch09
                 var vol = QuantLibHelper.EuropeanOptionImpliedVol(optionType, DateTime.Today, maturity, strike, spot, rate - carry, rate, quotedPrice);
                 VolTable.Rows.Add(maturity, quotedPrice, vol);
             }
-
         }
     }
 }
