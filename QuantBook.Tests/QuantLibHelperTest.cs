@@ -124,6 +124,7 @@ namespace QuantBook.Tests
             double[] rates = new double[] { 0.001049, 0.0012925, 0.001675, 0.00207, 0.002381, 0.0035140, 0.005841 };
             double[] vols = new double[] { 0.23362, 0.21374, 0.20661, 0.20132, 0.19921, 0.19983, 0.20122 };
             */
+
             var results = QuantLibHelper.AmericanOptionRealWorld(OptionType.Call, evalDate, maturity, spot, strikes, vols, rates, dividend, dividendFrequency, exDivDate, AmericanEngineType.Barone_Adesi_Whaley, 100);
             foreach(var result in results)
             {
