@@ -76,13 +76,12 @@ namespace QuantBook.Models.FixedIncome
             return results;
         }
 
-        public static (double? npv, double? cprice, double? dprice, double? accrued, double? ytm) BondPriceCurveRate()
+        public static (double? npv, double? cprice, double? dprice, double? accrued, double? ytm) BondPriceCurveRate(double faceValue = 100, double coupon = 0.05)
         {
             DayCounter bondDayCount = new ActualActual(ActualActual.Convention.Bond);
             Frequency frequency = Frequency.Annual;
             const int settlementDays = 1;
-            double faceValue = 100;
-            double coupon = 0.05;
+           
             List<double> rates = new List<double>() { 0, 0.004, 0.006, 0.0065, 0.007 };
             List<Date> rateDates = new List<Date>()
             {
@@ -150,6 +149,8 @@ namespace QuantBook.Models.FixedIncome
             return new PiecewiseYieldCurve<Discount, Cubic>(settlementDate, instruments, dc);
         }
 
+     
+
         public static (DateTime referenceDate, double timesToMaturity, InterestRate zeroCouponRate, InterestRate equivalentRate, double discountRate) InterbankZeroCoupon(DateTime settlementDate, double[] depositRates, Period[] depositMaturities, double[] futurePrices, double[] swapRates, Period[] swapMaturities)
         {
             DayCounter dc = new Actual360();
@@ -196,6 +197,49 @@ namespace QuantBook.Models.FixedIncome
                 var years = dc.yearFraction(evalDate, d);
                 var zeroRate = termStructure.zeroRate(years, Compounding.Compounded, Frequency.Annual);
                 var discount = termStructure.discount(d);
+                var eqRate = zeroRate.equivalentRate(dc, Compounding.Compounded, Frequency.Daily, evalDate, d).rate();
+                result.Add((d, years, zeroRate, discount, eqRate));
+                d = d + new Period(1, TimeUnit.Months);
+            }
+            return result;
+        }
+
+        public static List<(Date maturity, double years, InterestRate zeroRate, double discount, double eqRate)> ZeroCouponBootstrapZspread(double[] depositRates, Period[] depositMaturities, double[] bondPrices, double[] bondCoupons, Period[] bondMaturities, double zSpread)
+        {
+            var faceAmount = 100.0;
+            DayCounter dc = new ActualActual(ActualActual.Convention.Bond);
+            var evalDate = new Date(15, Month.January, 2015);
+            Settings.setEvaluationDate(evalDate);
+            Calendar calendar = new UnitedKingdom();
+
+            // deposits
+            var instruments = new List<RateHelper>();
+            for (int i = 0; i < depositMaturities.Length; i++)
+            {
+                instruments.Add(new DepositRateHelper(depositRates[i], depositMaturities[i], 0, calendar, BusinessDayConvention.Unadjusted, true, dc));
+            }
+
+            // bonds
+            for (int i = 0; i < bondMaturities.Length; i++)
+            {
+                var quote = new Handle<Quote>(new SimpleQuote(bondPrices[i]));
+                Date maturity = evalDate + bondMaturities[i];
+                var schedule = new Schedule(evalDate, maturity, new Period(Frequency.Annual), calendar, BusinessDayConvention.Unadjusted, BusinessDayConvention.Unadjusted, DateGeneration.Rule.Backward, true);
+                instruments.Add(new FixedRateBondHelper(quote, 0, faceAmount, schedule, new List<double>(bondCoupons), dc));
+            }
+
+            var result = new List<(Date maturity, double years, InterestRate zeroRate, double discount, double eqRate)>();
+            var termStructure = new PiecewiseYieldCurve<Discount, Linear>(evalDate, instruments, dc);
+            var zSpreadHandle = new Handle<Quote>(new SimpleQuote(zSpread / 10_000.0));
+            ZeroSpreadedTermStructure zs = new ZeroSpreadedTermStructure(new Handle<YieldTermStructure>(termStructure), zSpreadHandle);
+
+            Date d = evalDate + depositMaturities[0];
+            Date lastDate = evalDate + (new Period(3, TimeUnit.Years));
+            while (d < lastDate)
+            {
+                var years = dc.yearFraction(evalDate, d);
+                var zeroRate = zs.zeroRate(years, Compounding.Compounded, Frequency.Annual);
+                var discount = zs.discount(d);
                 var eqRate = zeroRate.equivalentRate(dc, Compounding.Compounded, Frequency.Daily, evalDate, d).rate();
                 result.Add((d, years, zeroRate, discount, eqRate));
                 d = d + new Period(1, TimeUnit.Months);

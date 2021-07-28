@@ -33,6 +33,22 @@ namespace QuantBook.Tests
         }
 
         [Test]
+        public void WhenCalculatingBondPriceWithCurveRates()
+        {
+            var faceValue = 100.0;
+            var coupon = 0.05;
+            var rate = 0.01;
+            (double? npv, double? cprice, double? dprice, double? accrued, double? ytm) = QuantLibFIHelper.BondPriceCurveRate(faceValue, coupon);
+
+            Console.WriteLine($"Simple bond of face value: {faceValue} with coupons {coupon} prices at {npv} with clean price: {cprice} dirty price {dprice} accrued {accrued} ytm {ytm}");
+            Assert.Greater(npv, 0);
+            Assert.Greater(cprice, 0);
+            Assert.Greater(dprice, 0);
+            Assert.Greater(accrued, 0);
+            Assert.Greater(ytm, 0);
+        }
+
+        [Test]
         public void WhenCalculatingZeroCouponRate()
         {
             var results = QuantLibFIHelper.ZeroCouponDirect();
@@ -108,7 +124,7 @@ namespace QuantBook.Tests
         }
 
         [Test]
-        public void WhenBootstrappingZeroCoup()
+        public void WhenFetchingZeroCouponBootstrapped()
         {
             var depositRates = new double[] { 0.044, 0.045, 0.046, 0.047, 0.049, 0.051, 0.053 };
             var depositMaturities = new Period[]
@@ -132,6 +148,38 @@ namespace QuantBook.Tests
             };
             var results = QuantLibFIHelper.ZeroCouponBootstrap(depositRates, depositMaturities, bondPrices, bondCoupons, bondMaturities);
             foreach(var result in results)
+            {
+                Console.WriteLine($"For maturity: {result.maturity} eqRate: {result.eqRate} years: {result.years} zeroRate: {result.zeroRate.rate()} discount: {result.discount}");
+                Assert.That(result.eqRate, Is.GreaterThan(0));
+                Assert.That(result.zeroRate.rate, Is.GreaterThan(0));
+                Assert.That(result.discount, Is.GreaterThan(0));
+            }
+        }
+
+        [Test]
+        public void WhenFetchingZeroSpreadedTermStructure()
+        {
+            var depositRates = new double[] {0.0525, 0.055 };
+            var depositMaturities = new Period[]
+            {                
+                new Period(6, TimeUnit.Months),
+                new Period(12, TimeUnit.Months),
+            };
+            double[] bondCoupons = new double[] { 0.0575, 0.06, 0.0625, 0.065, 0.0675, 0.068, 0.07, 0.071, 0.0715, 0.072, 0.073, 0.0735, 0.074, 0.075, 0.076, 0.076, 0.077, 0.078 };
+            double[] bondPrices = new double[bondCoupons.Length];
+            for (int i = 0; i < bondCoupons.Length; i++)
+            {
+                bondPrices[i] = 100.0;
+            }
+            Period[] bondMaturities = new Period[bondCoupons.Length];
+            for (int i = 0; i < bondCoupons.Length; i++)
+            {
+                bondMaturities[i] = new Period((i + 3) * 6, TimeUnit.Months);
+            }
+            double zSpread = 50.0;
+
+            var results = QuantLibFIHelper.ZeroCouponBootstrapZspread(depositRates, depositMaturities, bondPrices, bondCoupons, bondMaturities, zSpread);
+            foreach (var result in results)
             {
                 Console.WriteLine($"For maturity: {result.maturity} eqRate: {result.eqRate} years: {result.years} zeroRate: {result.zeroRate.rate()} discount: {result.discount}");
                 Assert.That(result.eqRate, Is.GreaterThan(0));
