@@ -107,27 +107,25 @@ namespace QuantBook.Tests
             double dividend = spot * 0.01;
             int dividendFrequency = 1;
 
-            //var evalDate = new Date(DateTime.Now.AddMonths(-2));
-            //var maturity = evalDate + 1 * 360;
-            //var exDivDate = evalDate + 30;
+            //var evalDate = new Date(DateTime.Now);
+            //var maturity = evalDate + 9 months;
+            //var exDivDate = maturity - 16;
 
             var evalDate = new Date(28, Month.Jul, 2021);
-            var maturity = new Date(21, Month.September, 2021);
-            var exDivDate = new Date(5, Month.September, 2021);
+            var maturity = new Date(21, Month.Apr, 2022);
+            var exDivDate = new Date(5, Month.Apr, 2022);
 
-            // Pricing INTC Calls expiring on Feb 21, 2014
-            /*
-            var evalDate = new Date(15, Month.November, 2013);
-            var maturity = new Date(21, Month.February, 2014);
-            var exDivDate = new Date(5, Month.February, 2014);
+            // Pricing INTC Calls expiring on Feb 21, 2014            
+            //var evalDate = new Date(15, Month.November, 2013);
+            //var maturity = new Date(21, Month.February, 2014);
+            //var exDivDate = new Date(5, Month.February, 2014);
 
-            double spot = 24.52;
-            double[] strikes = new double[] { 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0 };
-            double dividend = 0.22;
-            int dividendFrequency = 3; // Dividend paid quarterly
-            double[] rates = new double[] { 0.001049, 0.0012925, 0.001675, 0.00207, 0.002381, 0.0035140, 0.005841 };
-            double[] vols = new double[] { 0.23362, 0.21374, 0.20661, 0.20132, 0.19921, 0.19983, 0.20122 };
-            */
+            //double spot = 24.52;
+            //double[] strikes = new double[] { 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0 };
+            //double dividend = 0.22;
+            //int dividendFrequency = 3; // Dividend paid quarterly
+            //double[] rates = new double[] { 0.001049, 0.0012925, 0.001675, 0.00207, 0.002381, 0.0035140, 0.005841 };
+            //double[] vols = new double[] { 0.23362, 0.21374, 0.20661, 0.20132, 0.19921, 0.19983, 0.20122 };            
 
             var results = QuantLibHelper.AmericanOptionRealWorld(OptionType.Call, evalDate, maturity, spot, strikes, vols, rates, dividend, dividendFrequency, exDivDate, AmericanEngineType.Barone_Adesi_Whaley, 100);
             foreach(var result in results)
