@@ -45,5 +45,66 @@ namespace QuantBook.Tests
                 Console.WriteLine($"Zero coupon for {maturity} has coupon: {couponRate} equivalent: {equivalentRate} with discount:{discountRate}");
             }
         }
+
+        [Test]
+        public void WhenFetchingInterbankTermStructure()
+        {
+            var settlementDate = new DateTime(2015, 2, 18);
+            var depositRates = new double[] { 0.001375, 0.001717, 0.002112, 0.002581 };
+            var depositMaturities = new Period[]
+            {
+                new Period(1, TimeUnit.Weeks),
+                new Period(1, TimeUnit.Months),
+                new Period(2, TimeUnit.Months),
+                new Period(3, TimeUnit.Months)
+            };
+            double[] futurePrices = new double[] { 99.725, 99.585, 99.385, 99.16, 98.93, 98.715 };
+            double[] swapRates = new double[] { 0.0089268, 0.0123343, 0.0147985, 0.0165843, 0.0179191 };
+            var swapMaturities = new Period[]
+            {
+                new Period(2, TimeUnit.Years),
+                new Period(3, TimeUnit.Years),
+                new Period(4, TimeUnit.Years),
+                new Period(5, TimeUnit.Years),
+                new Period(6, TimeUnit.Years)
+            };
+            YieldTermStructure termStructure = QuantLibFIHelper.InterbankTermStructure(settlementDate, depositRates, depositMaturities, futurePrices, swapRates, swapMaturities);
+            var discountRate = termStructure.discount(settlementDate);            
+            var zeroRate = termStructure.zeroRate(settlementDate, new Actual360() , Compounding.Compounded);
+            var equivalentRate = zeroRate.equivalentRate(new Actual360(), Compounding.Compounded, Frequency.Daily, settlementDate.AddDays(-2), settlementDate).rate();
+            Console.WriteLine($"InterbankTermStructure results in discountRate:{discountRate} and zeroRate:{zeroRate}");
+            Assert.That(discountRate, Is.GreaterThan(0));
+            Assert.That(zeroRate.rate(), Is.GreaterThan(0));
+            Assert.That(equivalentRate, Is.GreaterThan(0));
+        }
+
+        [Test]
+        public void WhenFetchingInterbankZeroCoupon()
+        {
+            var settlementDate = new DateTime(2015, 2, 18);
+            var depositRates = new double[] { 0.001375, 0.001717, 0.002112, 0.002581 };
+            var depositMaturities = new Period[]
+            {
+                new Period(1, TimeUnit.Weeks),
+                new Period(1, TimeUnit.Months),
+                new Period(2, TimeUnit.Months),
+                new Period(3, TimeUnit.Months)
+            };
+            double[] futurePrices = new double[] { 99.725, 99.585, 99.385, 99.16, 98.93, 98.715 };
+            double[] swapRates = new double[] { 0.0089268, 0.0123343, 0.0147985, 0.0165843, 0.0179191 };
+            var swapMaturities = new Period[]
+            {
+                new Period(2, TimeUnit.Years),
+                new Period(3, TimeUnit.Years),
+                new Period(4, TimeUnit.Years),
+                new Period(5, TimeUnit.Years),
+                new Period(6, TimeUnit.Years)
+            };
+            (DateTime referenceDate, double timesToMaturity, InterestRate zeroCouponRate, InterestRate equivalentRate, double discountRate) = QuantLibFIHelper.InterbankZeroCoupon(settlementDate, depositRates, depositMaturities, futurePrices, swapRates, swapMaturities);
+            Console.WriteLine($"InterbankZeroCoupon @ {referenceDate} with timeToMaturity: {timesToMaturity} results in zeroCoupon: {zeroCouponRate.rate()} with equivalentRate: {equivalentRate.rate()} and discountRate: {discountRate} ");
+            Assert.That(zeroCouponRate.rate(), Is.GreaterThan(0));
+            Assert.That(equivalentRate.rate(), Is.GreaterThanOrEqualTo(0));
+            Assert.That(discountRate, Is.GreaterThan(0));
+        }
     }
 }

@@ -115,5 +115,53 @@ namespace QuantBook.Models.FixedIncome
             var ytm = Utilities.SafeExec(() => bond.yield(bondDayCount, Compounding.Continuous, frequency));
             return (npv, cprice, dprice, accrued, ytm);
         }
+
+        public static YieldTermStructure InterbankTermStructure(DateTime settlementDate, double[] depositRates, Period[] depositMaturities, double[] futurePrices, double[] swapRates, Period[] swapMaturities)
+        {
+            DayCounter dc = new Actual360();
+            const int fixingsDays = 2;
+
+            Calendar calendar = new JointCalendar(new UnitedKingdom(UnitedKingdom.Market.Exchange), new UnitedStates(UnitedStates.Market.Settlement));
+            var evalDate = calendar.advance(settlementDate, -fixingsDays, TimeUnit.Days);
+            Settings.setEvaluationDate(evalDate);
+
+            List<RateHelper> instruments = new List<RateHelper>();
+            // Money market deposits
+            for (int i = 0; i < depositRates.Length; i++)
+            {
+                instruments.Add(new DepositRateHelper(depositRates[i], depositMaturities[i], fixingsDays, calendar, BusinessDayConvention.ModifiedFollowing, true, dc));
+            }
+
+            // futures contracts
+            Date imm = IMM.nextDate(settlementDate);
+            for (int i = 0; i < futurePrices.Length; i++)
+            {
+                instruments.Add(new FuturesRateHelper(futurePrices[i], imm, 3, calendar, BusinessDayConvention.ModifiedFollowing, true, dc));
+                imm = IMM.nextDate(imm + 1);
+            }
+
+            // swap rates
+            var floatingLegIndex = new USDLibor(new Period(3, TimeUnit.Months));
+            for (int i = 0; i < swapRates.Length; i++)
+            {
+                instruments.Add(new SwapRateHelper(swapRates[i], swapMaturities[i], calendar, Frequency.Annual, BusinessDayConvention.Unadjusted, dc, floatingLegIndex)); 
+            }
+
+            return new PiecewiseYieldCurve<Discount, Cubic>(settlementDate, instruments, dc);
+        }
+
+        public static (DateTime referenceDate, double timesToMaturity, InterestRate zeroCouponRate, InterestRate equivalentRate, double discountRate) InterbankZeroCoupon(DateTime settlementDate, double[] depositRates, Period[] depositMaturities, double[] futurePrices, double[] swapRates, Period[] swapMaturities)
+        {
+            DayCounter dc = new Actual360();
+            var interbankTermStructure = InterbankTermStructure(settlementDate, depositRates, depositMaturities, futurePrices, swapRates, swapMaturities);
+
+            var referenceDate = interbankTermStructure.referenceDate();
+            var years = dc.yearFraction(settlementDate, referenceDate);
+            var zeroRate = interbankTermStructure.zeroRate(years, Compounding.Compounded, Frequency.Annual);
+            var discount = interbankTermStructure.discount(referenceDate);
+            var eqRate = zeroRate.equivalentRate(dc, Compounding.Compounded, Frequency.Daily, settlementDate.AddDays(-2), settlementDate);
+            return (referenceDate, years, zeroRate, eqRate, discount);
+
+        }
     }
 }
