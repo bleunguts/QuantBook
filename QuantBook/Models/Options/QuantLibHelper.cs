@@ -287,6 +287,7 @@ namespace QuantBook.Models.Options
         {
             DayCounter dc = new ActualActual();
             var settlementDate = evalDate + 2;
+            Settings.setEvaluationDate(evalDate);
             Calendar calendar = new UnitedKingdom(UnitedKingdom.Market.Exchange);
 
             // build dividend term structure

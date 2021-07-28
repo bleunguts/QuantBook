@@ -12,9 +12,9 @@ Skipped these sections below:
 * Pricing Exotic Options using QuantLib pg 431
 	* Barrier Options
 	* Bermudan Options
-* Pricing Fixed Income 
-	* Interbank Zero-Coupon Yield Curve
-	* Credit Spread Term Structures
+* Pricing Fixed Income 	
 	* Callable Bonds
 	* Convertible Bonds
 	* CDS pricing
+	** Zero Coupon & Interbank Zero Coupon (ignored graphing)
+	** Credit Spread Term Structures (ignored graphing)

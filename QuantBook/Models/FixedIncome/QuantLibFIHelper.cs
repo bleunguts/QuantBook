@@ -161,7 +161,46 @@ namespace QuantBook.Models.FixedIncome
             var discount = interbankTermStructure.discount(referenceDate);
             var eqRate = zeroRate.equivalentRate(dc, Compounding.Compounded, Frequency.Daily, settlementDate.AddDays(-2), settlementDate);
             return (referenceDate, years, zeroRate, eqRate, discount);
+        }
 
+        public static List<(Date maturity, double years, InterestRate zeroRate, double discount, double eqRate)> ZeroCouponBootstrap(double[] depositRates, Period[] depositMaturities, double[] bondPrices, double[] bondCoupons, Period[] bondMaturities)
+        {
+            var faceAmount = 100.0;
+            DayCounter dc = new ActualActual(ActualActual.Convention.Bond);
+            var evalDate = new Date(15, Month.January, 2015);
+            Settings.setEvaluationDate(evalDate);
+            Calendar calendar = new UnitedKingdom();
+
+            // deposits
+            var instruments = new List<RateHelper>();
+            for (int i = 0; i < depositMaturities.Length; i++)
+            {
+                instruments.Add(new DepositRateHelper(depositRates[i], depositMaturities[i], 0, calendar, BusinessDayConvention.Unadjusted, true, dc));
+            }
+
+            // bonds
+            for (int i = 0; i < bondMaturities.Length; i++)
+            {
+                var quote = new Handle<Quote>(new SimpleQuote(bondPrices[i]));
+                Date maturity = evalDate + bondMaturities[i];
+                var schedule = new Schedule(evalDate, maturity, new Period(Frequency.Annual), calendar, BusinessDayConvention.Unadjusted, BusinessDayConvention.Unadjusted, DateGeneration.Rule.Backward, true);
+                instruments.Add(new FixedRateBondHelper(quote, 0, faceAmount, schedule, new List<double>(bondCoupons), dc));
+            }
+
+            var result = new List<(Date maturity, double years, InterestRate zeroRate, double discount, double eqRate)>();
+            var termStructure = new PiecewiseYieldCurve<Discount, Linear>(evalDate, instruments, dc);
+            Date d = evalDate + depositMaturities[0];
+            Date lastDate = evalDate + (new Period(3, TimeUnit.Years));
+            while (d < lastDate)
+            {
+                var years = dc.yearFraction(evalDate, d);
+                var zeroRate = termStructure.zeroRate(years, Compounding.Compounded, Frequency.Annual);
+                var discount = termStructure.discount(d);
+                var eqRate = zeroRate.equivalentRate(dc, Compounding.Compounded, Frequency.Daily, evalDate, d).rate();
+                result.Add((d, years, zeroRate, discount, eqRate));
+                d = d + new Period(1, TimeUnit.Months);
+            }
+            return result;
         }
     }
 }

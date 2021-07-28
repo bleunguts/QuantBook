@@ -106,5 +106,38 @@ namespace QuantBook.Tests
             Assert.That(equivalentRate.rate(), Is.GreaterThanOrEqualTo(0));
             Assert.That(discountRate, Is.GreaterThan(0));
         }
+
+        [Test]
+        public void WhenBootstrappingZeroCoup()
+        {
+            var depositRates = new double[] { 0.044, 0.045, 0.046, 0.047, 0.049, 0.051, 0.053 };
+            var depositMaturities = new Period[]
+            {
+                new Period(1, TimeUnit.Weeks),
+                new Period(1, TimeUnit.Months),
+                new Period(2, TimeUnit.Months),
+                new Period(3, TimeUnit.Months),
+                new Period(6, TimeUnit.Months),
+                new Period(9, TimeUnit.Months),
+                new Period(12, TimeUnit.Months),
+            };
+            double[] bondCoupons = new double[] { 0.05, 0.06, 0.055, 0.05};
+            double[] bondPrices = new double[] { 99.55, 100.55, 99.5, 97.6 };
+            var bondMaturities = new Period[]
+            {
+                new Period(14, TimeUnit.Months),
+                new Period(21, TimeUnit.Months),
+                new Period(2, TimeUnit.Years),
+                new Period(3, TimeUnit.Years),
+            };
+            var results = QuantLibFIHelper.ZeroCouponBootstrap(depositRates, depositMaturities, bondPrices, bondCoupons, bondMaturities);
+            foreach(var result in results)
+            {
+                Console.WriteLine($"For maturity: {result.maturity} eqRate: {result.eqRate} years: {result.years} zeroRate: {result.zeroRate.rate()} discount: {result.discount}");
+                Assert.That(result.eqRate, Is.GreaterThan(0));
+                Assert.That(result.zeroRate.rate, Is.GreaterThan(0));
+                Assert.That(result.discount, Is.GreaterThan(0));
+            }
+        }
     }
 }
