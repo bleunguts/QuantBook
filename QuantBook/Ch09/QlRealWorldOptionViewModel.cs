@@ -59,9 +59,13 @@ namespace QuantBook.Ch09
         {
             OptionTable.Clear();
             // Pricing INTC Calls expiring on Feb 21, 2014
-            var evalDate = new Date(15, Month.November, 2013);
-            var maturity = new Date(21, Month.February, 2014);
-            var exDivDate = new Date(5, Month.February, 2014);
+            //var evalDate = new Date(15, Month.November, 2013);
+            //var maturity = new Date(21, Month.February, 2014);
+            //var exDivDate = new Date(5, Month.February, 2014);
+
+            var evalDate = new Date(28, Month.Jul, 2021);
+            var maturity = new Date(21, Month.Apr, 2022);
+            var exDivDate = new Date(5, Month.Apr, 2022);
 
             double spot = 24.52;
             double[] strikes = new double[] { 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0 };

@@ -297,7 +297,6 @@ namespace QuantBook.Models.Options
         {
             DayCounter dc = new ActualActual();
             var settlementDate = evalDate + 2;
-            SimpleQuote spot_ = new SimpleQuote(spot);
             Calendar calendar = new UnitedKingdom(UnitedKingdom.Market.Exchange);
 
             // build dividend term structure
@@ -314,7 +313,7 @@ namespace QuantBook.Models.Options
             volTermStructure.enableExtrapolation();
 
             Exercise exercise = new AmericanExercise(settlementDate, maturity);
-            GeneralizedBlackScholesProcess stochProcess = BlackScholesMertonProcess(spot_, dividendCurve, yieldTermStructure, volTermStructure);
+            GeneralizedBlackScholesProcess stochProcess = BlackScholesMertonProcess(new SimpleQuote(spot), dividendCurve, yieldTermStructure, volTermStructure);
             IPricingEngine engine = null;
             switch (engineType)
             {
