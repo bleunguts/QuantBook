@@ -229,8 +229,8 @@ namespace QuantBook.Models.Options
                 var depositRate = new DepositRateHelper(rates[i], periods[i], (int)fixingsDays, calendar, BusinessDayConvention.ModifiedFollowing, true, dc);
                 instruments.Add(depositRate);
             }
-
-            return new PiecewiseYieldCurve<Discount, LogLinear>(settlementDate, instruments, new Actual360());
+            
+            return new PiecewiseYieldCurve<Discount, Cubic>(settlementDate, instruments, dc);
         }
 
         /// <summary>
@@ -267,7 +267,7 @@ namespace QuantBook.Models.Options
                                                           new ActualActual(ActualActual.Convention.ISMA),
                                                           new Linear(),
                                                           Compounding.Continuous,
-                                                          Frequency.Annual);
+                                                          Frequency.Biweekly);
         }
 
         public static BlackVolTermStructure GetVolCurve(Date evalDate, Date maturity, double[] strikes, double[] vols, Calendar calendar, DayCounter dc)
@@ -309,12 +309,12 @@ namespace QuantBook.Models.Options
             // build volatility term structure
             BlackVolTermStructure volTermStructure = GetVolCurve(evalDate, maturity, strikes, vols, calendar, dc);
 
-            // DEBUG
-            var dividendCurve1 = new FlatForward(evalDate, new SimpleQuote(0.1), dc);
-            yieldTermStructure = new FlatForward(evalDate, new SimpleQuote(0.1), dc);
+            yieldTermStructure.enableExtrapolation();
+            dividendCurve.enableExtrapolation();
+            volTermStructure.enableExtrapolation();
 
             Exercise exercise = new AmericanExercise(settlementDate, maturity);
-            GeneralizedBlackScholesProcess stochProcess = BlackScholesMertonProcess(spot_, dividendCurve1, yieldTermStructure, volTermStructure);
+            GeneralizedBlackScholesProcess stochProcess = BlackScholesMertonProcess(spot_, dividendCurve, yieldTermStructure, volTermStructure);
             IPricingEngine engine = null;
             switch (engineType)
             {

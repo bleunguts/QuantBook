@@ -105,11 +105,15 @@ namespace QuantBook.Tests
             double[] vols = new[] { 0.3, 0.31, 0.32 };
             double[] rates = new[] { 0.1, 0.15, 0.012 };
             double dividend = spot * 0.01;
-            int dividendFrequency = 3;       
+            int dividendFrequency = 1;
 
-            var evalDate = new Date(DateTime.Now.AddMonths(-2));
-            var maturity = evalDate + 1 * 360;
-            var exDivDate = evalDate + 30;            
+            //var evalDate = new Date(DateTime.Now.AddMonths(-2));
+            //var maturity = evalDate + 1 * 360;
+            //var exDivDate = evalDate + 30;
+
+            var evalDate = new Date(28, Month.Jul, 2021);
+            var maturity = new Date(21, Month.September, 2021);
+            var exDivDate = new Date(5, Month.September, 2021);
 
             // Pricing INTC Calls expiring on Feb 21, 2014
             /*
