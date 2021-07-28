@@ -76,6 +76,59 @@ namespace QuantBook.Models.FixedIncome
             return results;
         }
 
+        public static (double? npv, double? cprice, double? dprice, double? accrued, double? ytm, List<(double zSpread, double npv)> zResults) BondPriceCurveRateZSpread(double faceValue, double coupon)
+        {
+            DayCounter bondDayCount = new ActualActual(ActualActual.Convention.Bond);
+            Frequency frequency = Frequency.Annual;
+            const int settlementDays = 1;
+
+            List<double> rates = new List<double>() { 0, 0.004, 0.006, 0.0065, 0.007 };
+            List<Date> rateDates = new List<Date>()
+            {
+                new Date(15, Month.January, 2015),
+                new Date(15, Month.July, 2015),
+                new Date(15, Month.January, 2016),
+                new Date(15, Month.July, 2016),
+                new Date(15, Month.January, 2017)
+            };
+            Date evalDate = new Date(15, Month.January, 2015);
+            Settings.setEvaluationDate(evalDate);
+            Date issueDate = new Date(15, Month.January, 2015);
+            Date maturity = new Date(15, Month.January, 2017);
+            Date settlementDate = evalDate + settlementDays;
+            Calendar calendar = new UnitedKingdom(UnitedKingdom.Market.Exchange);
+            settlementDate = calendar.adjust(settlementDate);
+
+            Schedule schedule = new Schedule(issueDate, maturity, new Period(Frequency.Semiannual), calendar, BusinessDayConvention.Unadjusted, BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Backward, false);
+            FixedRateBond bond = new FixedRateBond(settlementDays, faceValue, schedule, new List<double>() { coupon }, bondDayCount);
+            var rateCurve = new InterpolatedZeroCurve<Linear>(rateDates, rates, bondDayCount, calendar, new Linear(), Compounding.Compounded, frequency);
+            var discountingTermStructure = new Handle<YieldTermStructure>(rateCurve);
+            IPricingEngine bondEngine = new DiscountingBondEngine(discountingTermStructure);
+            bond.setPricingEngine(bondEngine);
+
+            double[] zSpreads = new double[21];
+            for (int i = 0; i < zSpreads.Length; i++)
+            {
+                zSpreads[i] = 250.0 * i;
+            }
+
+            List<(double zSpread, double npv)> zSpreadResults = new List<(double zSpread, double npv)>();
+            var leg = bond.cashflows();
+            for (int i = 0; i < zSpreads.Length; i++)
+            {
+                var znpv = CashFlows.npv(leg, rateCurve, zSpreads[i] / 10_000.0, bondDayCount, Compounding.Compounded, Frequency.Semiannual, true, settlementDate, evalDate);
+                zSpreadResults.Add((zSpreads[i], znpv));
+            }
+
+            var npv = Utilities.SafeExec(() => bond.NPV());
+            var cprice = Utilities.SafeExec(() => bond.cleanPrice());
+            var dprice = Utilities.SafeExec(() => bond.dirtyPrice());
+            var accrued = Utilities.SafeExec(() => bond.accruedAmount());
+            var ytm = Utilities.SafeExec(() => bond.yield(bondDayCount, Compounding.Continuous, frequency));
+            return (npv, cprice, dprice, accrued, ytm, zSpreadResults);
+        }
+
         public static (double? npv, double? cprice, double? dprice, double? accrued, double? ytm) BondPriceCurveRate(double faceValue = 100, double coupon = 0.05)
         {
             DayCounter bondDayCount = new ActualActual(ActualActual.Convention.Bond);

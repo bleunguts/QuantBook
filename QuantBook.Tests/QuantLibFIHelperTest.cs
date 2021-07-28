@@ -49,6 +49,27 @@ namespace QuantBook.Tests
         }
 
         [Test]
+        public void WhenCalculatingBondPriceWithCurveRateZSpread()
+        {
+            var faceValue = 100.0;
+            var coupon = 0.05;
+            var rate = 0.01;
+            (double? npv, double? cprice, double? dprice, double? accrued, double? ytm, List<(double zSpread, double npv)> zResults) = QuantLibFIHelper.BondPriceCurveRateZSpread(faceValue, coupon);
+
+            Console.WriteLine($"Simple bond of face value: {faceValue} with coupons {coupon} prices at {npv} with clean price: {cprice} dirty price {dprice} accrued {accrued} ytm {ytm}");
+            Console.WriteLine("zResults: ");
+            foreach(var z in zResults)
+            {
+                Console.WriteLine($"{z.zSpread}={z.npv}"); 
+            }
+            Assert.Greater(npv, 0);
+            Assert.Greater(cprice, 0);
+            Assert.Greater(dprice, 0);
+            Assert.Greater(accrued, 0);
+            Assert.Greater(ytm, 0);
+        }
+
+        [Test]
         public void WhenCalculatingZeroCouponRate()
         {
             var results = QuantLibFIHelper.ZeroCouponDirect();
