@@ -37,6 +37,45 @@ namespace QuantBook.Models.FixedIncome
             return (npv, cprice, dprice, accrued, ytm);
         }
 
+        public static List<(DateTime maturity, double couponRate, double equivalentRate, double discountRate)> ZeroCouponDirect()
+        {
+            DayCounter dc = new ActualActual(ActualActual.Convention.Bond);
+            Calendar calender = new UnitedKingdom();
+
+            Date evalDate = new Date(15, Month.Jan, 2015);
+            Date[] maturities = new Date[]
+            {
+                new Date(15, Month.January, 2016),
+                new Date(15, Month.January, 2017),
+                new Date(15, Month.January, 2018),
+                new Date(15, Month.January, 2019),
+            };
+            var faceAmount = 100.0;
+            var coupons = new List<double> { 0.05, 0.055, 0.05, 0.06 };
+            var bondPrices = new List<double> { 101.0, 101.5, 99.0, 100.0 };
+
+            Settings.setEvaluationDate(evalDate);
+            var instruments = new List<RateHelper>();
+            for (int i = 0; i < maturities.Length; i++)
+            {
+                var schedule = new Schedule(evalDate, maturities[i], new Period(Frequency.Annual), calender, BusinessDayConvention.Unadjusted, BusinessDayConvention.Unadjusted, DateGeneration.Rule.Backward, true);
+                instruments.Add(new FixedRateBondHelper(new Handle<Quote>(new SimpleQuote(bondPrices[i])), 0, faceAmount, schedule, coupons, dc, BusinessDayConvention.Unadjusted, 100.0, evalDate));
+            }
+            var discountTermStructure = new PiecewiseYieldCurve<Discount, Linear>(evalDate, instruments, dc);
+
+            var results = new List<(DateTime maturity, double couponRate, double equivalentRate, double discountRate)>();
+            foreach(var maturityDate in discountTermStructure.dates())
+            {
+                var years = dc.yearFraction(evalDate, maturityDate);
+                var zeroRate = discountTermStructure.zeroRate(years, Compounding.Compounded, Frequency.Annual);
+                var discount = discountTermStructure.discount(maturityDate);
+                var equivalentRate = zeroRate.equivalentRate(dc, Compounding.Compounded, Frequency.Daily, evalDate, maturityDate).rate();
+                results.Add((maturityDate, zeroRate.rate(), equivalentRate, discount));
+
+            }
+            return results;
+        }
+
         public static (double? npv, double? cprice, double? dprice, double? accrued, double? ytm) BondPriceCurveRate()
         {
             DayCounter bondDayCount = new ActualActual(ActualActual.Convention.Bond);

@@ -31,5 +31,19 @@ namespace QuantBook.Tests
             Assert.Greater(accrued, 0);
             Assert.Greater(ytm, 0);
         }
+
+        [Test]
+        public void WhenCalculatingZeroCouponRate()
+        {
+            var results = QuantLibFIHelper.ZeroCouponDirect();
+            foreach (var result in results)
+            {
+                var maturity = result.maturity;
+                var couponRate = result.couponRate;
+                var equivalentRate = result.equivalentRate;
+                var discountRate = result.discountRate;
+                Console.WriteLine($"Zero coupon for {maturity} has coupon: {couponRate} equivalent: {equivalentRate} with discount:{discountRate}");
+            }
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using QLNet;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Odbc;
@@ -282,7 +283,34 @@ namespace QuantBook.Models
 
 
 
+        public static T To<T>(this object text)
+        {
+            if (text == null) return default(T);
+            if (text.Equals(DBNull.Value)) return default(T);
+            if (text is string) if (string.IsNullOrWhiteSpace(text as string)) return default(T);
 
+            var type = typeof(T);
+            if (type.ToString() == "QuantLib.Date")
+            {
+                var dt = (DateTime)text;
+                Date date = new Date((int)dt.ToOADate());
+                return (T)Convert.ChangeType(date, type);
+            }
+
+            var underlyingType = Nullable.GetUnderlyingType(type) ?? type;
+
+            return (T)Convert.ChangeType(text, underlyingType);
+        }
+
+        public static T ToDatetime<T>(this Date date)
+        {
+            DateTime dt = Convert.ToDateTime(date.month() + " " + date.Day.ToString() + ", " + date.year().ToString());
+            var type = typeof(T);
+            if (type == typeof(string))
+                return (T)Convert.ChangeType(dt.ToShortDateString(), typeof(T));
+            else
+                return (T)Convert.ChangeType(dt, typeof(T));
+        }
 
 
 
