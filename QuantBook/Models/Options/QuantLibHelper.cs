@@ -5,6 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using U = QuantBook.Models.Utilities;
 
 namespace QuantBook.Models.Options
 {
@@ -164,26 +165,15 @@ namespace QuantBook.Models.Options
             VanillaOption option = new VanillaOption(payoff, exercise);
             option.setPricingEngine(engine);
 
-            double? npv = SafeExec(() => option.NPV());
-            double? delta = SafeExec(() => option.delta());
-            double? gamma = SafeExec(() => option.gamma());
-            double? theta = SafeExec(() => option.theta());
-            double? rho = SafeExec(() => option.rho());
-            double? vega = SafeExec(() => option.vega());
+            double? npv = U.SafeExec(() => option.NPV());
+            double? delta = U.SafeExec(() => option.delta());
+            double? gamma = U.SafeExec(() => option.gamma());
+            double? theta = U.SafeExec(() => option.theta());
+            double? rho = U.SafeExec(() => option.rho());
+            double? vega = U.SafeExec(() => option.vega());
 
             return (npv, delta, gamma, theta, rho, vega);
-        }
-
-        public static double? SafeExec(Func<double?> f)
-        {
-            try 
-            { 
-                return f(); 
-            } 
-            catch(Exception ex) { Console.WriteLine(ex.Message); }
-
-            return null;
-        }
+        }   
 
         public static double AmericanOptionImpliedVol(OptionType optionType, Date evalDate, double yearsTomaturity, double strike, double spot, double divYield, double rate, double targetPrice)
         {       
@@ -336,12 +326,12 @@ namespace QuantBook.Models.Options
                 var payoff = new PlainVanillaPayoff(optionType.ToOptionType(), strikes[i]);
                 VanillaOption option = new VanillaOption(payoff, exercise);
                 option.setPricingEngine(engine);
-                double? npv = SafeExec(() => option.NPV());
-                double? delta = SafeExec(() => option.delta());
-                double? gamma = SafeExec(() => option.gamma());
-                double? theta = SafeExec(() => option.theta());
-                double? rho = SafeExec(() => option.rho());
-                double? vega = SafeExec(() => option.vega());               
+                double? npv = U.SafeExec(() => option.NPV());
+                double? delta = U.SafeExec(() => option.delta());
+                double? gamma = U.SafeExec(() => option.gamma());
+                double? theta = U.SafeExec(() => option.theta());
+                double? rho = U.SafeExec(() => option.rho());
+                double? vega = U.SafeExec(() => option.vega());               
                 result.Add((strikes[i], npv, delta, gamma, theta, rho, vega));
             }
             return result;
