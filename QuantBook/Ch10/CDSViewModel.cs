@@ -1,4 +1,6 @@
 ﻿using Caliburn.Micro;
+using QLNet;
+using QuantBook.Models.FixedIncome;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -28,9 +30,67 @@ namespace QuantBook.Ch10
             Spreads = "34.93,53.60,72.02,106.39,129.39,139.46";
             Tenors = "1Y,2Y,3Y,5Y,7Y,10Y";
             RecoveryRate = 0.4;
+            InitializeCds1();
+        }
+        private void InitializeCds1()
+        {
+            EvalDate = new DateTime(2009, 6, 15);
+            EffectiveDate = new DateTime(2009, 3, 20);
+            Maturity = new DateTime(2014, 6, 20);
+            Spreads = "10";
+            Tenors = "5Y";
+            RecoveryRate = 0.4;
+            CdsCoupon = 100;
+            Notional = 10_000;
+            ProtectionSide = "Buyer";
         }
         public BindableCollection<Series> LineSeriesCollection1 { get; set; }
         public BindableCollection<Series> LineSeriesCollection2 { get; set; }
+
+
+        private string protectionSide;
+
+        public string ProtectionSide
+        {
+            get { return protectionSide; }
+            set { protectionSide = value; NotifyOfPropertyChange(() => ProtectionSide); }
+        }
+
+        private int notional;
+
+        public int Notional
+        {
+            get { return notional; }
+            set { notional = value; NotifyOfPropertyChange(() => Notional); }
+        }
+
+
+        private double cdsCoupon;
+
+        public double CdsCoupon
+        {
+            get { return cdsCoupon; }
+            set { cdsCoupon = value; NotifyOfPropertyChange(() => CdsCoupon); }
+        }
+
+
+        private DateTime maturity;
+
+        public DateTime Maturity
+        {
+            get { return maturity; }
+            set { maturity = value; NotifyOfPropertyChange(() => Maturity); }
+        }
+
+
+        private DateTime effectiveDate;
+
+        public DateTime EffectiveDate
+        {
+            get { return effectiveDate; }
+            set { effectiveDate = value; NotifyOfPropertyChange(() => EffectiveDate); }
+        }
+
 
         private DateTime evalDate;
 
@@ -131,6 +191,32 @@ namespace QuantBook.Ch10
         public void HazardRate()
         {
             throw new NotImplementedException("Can't get the quant lib to work for this one");
+        }
+
+        public void StartCdsPV()
+        {
+            LineSeriesCollection1.Clear();
+            LineSeriesCollection2.Clear();
+
+            DataTable dt = new DataTable();
+            dt.Columns.AddRange(new[]
+            {
+                new DataColumn("Name", typeof(string)),
+                new DataColumn("Value", typeof(string)),                
+            });
+            var result = QuantLibFIHelper.CdsPv(ToSide(protectionSide), "USD", EvalDate, EffectiveDate, Maturity, RecoveryRate, Spreads, Tenors, Notional, Frequency.Quarterly, CdsCoupon);
+
+            dt.Rows.Add("Maturity", Maturity);
+            dt.Rows.Add("Coupoon", CdsCoupon);
+            dt.Rows.Add("PresentValue", result.npv);
+            dt.Rows.Add("FairSpread", result.fairSpread);
+            dt.Rows.Add("HazardRate", result.hazardRate);
+            dt.Rows.Add("DefaultProbability", result.defaultProbability);
+            dt.Rows.Add("SurvivalProbability", result.survivalpProbability);
+
+            Table1 = dt; 
+
+            Protection.Side ToSide(string s) => s.ToUpper() == "BUYER" ? Protection.Side.Buyer : Protection.Side.Seller;
         }
 
     }

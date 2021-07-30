@@ -266,6 +266,31 @@ namespace QuantBook.Models.FixedIncome
             return (npv, cprice, dprice, accrued, ytm, zSpreadResults);
         }
 
+        public static (double npv, double hazardRate, double fairSpread, double defaultProbability, double survivalpProbability) CdsPv(Protection.Side side, string ccy, Date evalDate, Date effectiveDate, Date maturity, double recoveryRate, string spreads, string tenors, int notional, Frequency couponFrequency, double coupon)
+        {
+            Calendar calendar = new TARGET();
+            evalDate = calendar.adjust(evalDate);
+            Date settlementDate = calendar.advance(evalDate, new Period(2, TimeUnit.Days));
+
+            var termStructureCurve = new Handle<YieldTermStructure>(IsdaZeroCurve(evalDate, ccy));
+
+            // construct proability curve based on hazardRate
+            Handle<Quote> hazardRate = new Handle<Quote>(new SimpleQuote(0.01234));
+            RelinkableHandle<DefaultProbabilityTermStructure> probabilityCurve =
+               new RelinkableHandle<DefaultProbabilityTermStructure>();
+            probabilityCurve.linkTo(new FlatHazardRate(0, calendar, hazardRate, new Actual360()));            
+
+            var schedule = new Schedule(effectiveDate, settlementDate, new Period(couponFrequency), calendar, BusinessDayConvention.Following, BusinessDayConvention.Following, DateGeneration.Rule.TwentiethIMM, false);
+            var creditDefaultSwap = new CreditDefaultSwap(side, notional, coupon / 10_000, schedule, BusinessDayConvention.ModifiedFollowing, new ActualActual(), false);
+            var engine = new MidPointCdsEngine(probabilityCurve, recoveryRate, termStructureCurve);
+            creditDefaultSwap.setPricingEngine(engine);
+            var npv = creditDefaultSwap.NPV();
+            var hazardRate_ = creditDefaultSwap.impliedHazardRate(npv, termStructureCurve, new ActualActual());
+            var defaultProbability = probabilityCurve.link.defaultProbability(evalDate, maturity);
+            var survivalProbability = probabilityCurve.link.survivalProbability(maturity);
+            return (npv, hazardRate_, creditDefaultSwap.fairSpread(), defaultProbability, survivalProbability);
+        }
+
         public static (double? npv, double? cprice, double? dprice, double? accrued, double? ytm) BondPriceCurveRate(double faceValue = 100,
                                                                                                                      double coupon = 0.05)
         {

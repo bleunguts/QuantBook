@@ -274,7 +274,27 @@ namespace QuantBook.Tests
             var referenceRate = termStructure.zeroRate(referenceDate, new Actual365Fixed(), Compounding.Compounded).rate();
             Console.WriteLine($"Rate for {ccy} in {referenceDate.ToShortDateString()} is {rate}");
             Console.WriteLine($"Rate for {ccy} in {evalDate.ToShortDateString()} is {referenceRate}");
+        }
 
+        [Test]
+        public void WhenValuingCdsPV()
+        {
+            var evalDate = new Date(15, 6, 2009);
+            var effectiveDate = new Date(20, 3, 2009);
+            var maturity = new Date(20, 6, 2014);
+            var ccy = "USD";
+            var recoveryRate = 0.4;
+            var tenors = "5Y";
+            var spreads = "210";
+            var notional = 10_000;
+            var coupon = 100;       
+            var cds = QuantLibFIHelper.CdsPv(Protection.Side.Buyer, ccy, evalDate, effectiveDate, maturity, recoveryRate, spreads, tenors, notional, Frequency.Quarterly, coupon);
+
+            Assert.That(cds.npv, Is.GreaterThan(0).Or.LessThan(0)) ;
+            Assert.That(cds.fairSpread, Is.GreaterThan(0));
+            Assert.That(cds.hazardRate, Is.GreaterThan(0));
+            Assert.That(cds.defaultProbability, Is.GreaterThan(0));
+            Assert.That(cds.survivalpProbability, Is.GreaterThan(0));
         }
     }
 }

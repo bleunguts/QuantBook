@@ -28,7 +28,6 @@ namespace QuantBook.Tests
                 Assert.IsNotNull(row["Sector"].ToString());
 
             }
-            Assert.Pass("If it reached here we are all good.");
         }
     }
 }

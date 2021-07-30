@@ -14,13 +14,24 @@
         <StackPanel Margin="0 0 10 0" >
             <TextBlock Text="Evaluation Date"/>
             <TextBox x:Name="EvalDate" Width="150" Margin="0 2 0 0"/>
+            <TextBlock Text="Effective Date"/>
+            <TextBox x:Name="EffectiveDate" Width="150" Margin="0 2 0 0"/>
+            <TextBlock Text="Maturity"/>
+            <TextBox x:Name="Maturity" Width="150" Margin="0 2 0 0"/>
             <TextBlock Text="Spreads" Margin="0 10 0 0"/>
             <TextBox x:Name="Spreads" Width="150" Height="60" Margin="0 2 0 0" AcceptsReturn="True" TextWrapping="Wrap"/>
             <TextBlock Text="Tenors" Margin="0 10 0 0"/>
             <TextBox x:Name="Tenors" Width="150" Height="40" Margin="0 2 0 0" AcceptsReturn="True" TextWrapping="Wrap"/>
             <TextBlock Text="Recovery Rate" Margin="0 10 0 0"/>
             <TextBox x:Name="RecoveryRate" Width="150" Margin="0 2 0 0"/>
+            <TextBlock Text="Coupon" Margin="0 10 0 0"/>
+            <TextBox x:Name="CdsCoupon" Width="150" Margin="0 2 0 0"/>
+            <TextBlock Text="Notional" Margin="0 10 0 0"/>
+            <TextBox x:Name="Notional" Width="150" Margin="0 2 0 0"/>
+            <TextBlock Text="Protection Side" Margin="0 10 0 0"/>
+            <TextBox x:Name="ProtectionSide" Width="150" Margin="0 2 0 0"/>
             <Button x:Name="HazardRate" Content="Start Hazard Rate" Width="150" Margin="0 20 0 0"/>
+            <Button x:Name="StartCdsPV" Content="Start CDS PresentValue" Width="150" Margin="0 20 0 0"/>
         </StackPanel>
         <Grid Grid.Column="1">
             <Grid.ColumnDefinitions>
