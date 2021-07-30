@@ -262,5 +262,21 @@ namespace QuantBook.Tests
                 Assert.That(result.survivalProbability, Is.GreaterThan(0));
             }
         }
+
+        [Test]
+        public void WhenFetchingIsdaZeroCurve()
+        {
+            var evalDate = new Date(18, 3, 2015);
+            var referenceDate = evalDate - 3;
+            var ccy = "USD";
+            var termStructure = QuantLibFIHelper.IsdaZeroCurve(referenceDate, ccy);
+            var rate = termStructure.zeroRate(evalDate, new Actual365Fixed(), Compounding.Compounded, extrapolate: true).rate();
+            var referenceRate = termStructure.zeroRate(referenceDate, new Actual365Fixed(), Compounding.Compounded).rate();
+            Console.WriteLine($"Rate for {ccy} in {referenceDate.ToShortDateString()} is {rate}");
+            Console.WriteLine($"Rate for {ccy} in {evalDate.ToShortDateString()} is {referenceRate}");
+
+        }
     }
 }
+
+
