@@ -77,7 +77,7 @@ namespace QuantBook.Ch10
                 table.Columns.AddRange(new[]
                 {
                     new DataColumn("Maturity", typeof(string)),
-                    new DataColumn("Zero Coupono Rate: R", typeof(string)),
+                    new DataColumn("Zero Coupon Rate: R", typeof(string)),
                     new DataColumn("Equivalent Rate: Rc", typeof(string)),
                     new DataColumn("Discount Rate: B", typeof(string))
                 });
@@ -111,8 +111,8 @@ namespace QuantBook.Ch10
 
             DataTable dt1 = new DataTable();
             DataTable dt2 = new DataTable();
-            FillColumnHeaders(dt1);
-            FillColumnHeaders(dt2);
+            FillHeaders(dt1);
+            FillHeaders(dt2);
             
             FillDataTable(dt1, QuantLibFIHelper.ZeroCouponBootstrap(faceAmount, evalDate, depositRates, depositMaturities, bondPrices, bondCoupons, bondMaturities, ResultType.FromInputMaturities));
             FillDataTable(dt2, QuantLibFIHelper.ZeroCouponBootstrap(faceAmount, evalDate, depositRates, depositMaturities, bondPrices, bondCoupons, bondMaturities, ResultType.MonthlyResults));
@@ -120,26 +120,7 @@ namespace QuantBook.Ch10
             ZcTable1 = dt1;
             ZcTable2 = dt2;
 
-            AddCharts();
-
-            void FillDataTable(DataTable table, List<(Date maturity, double years, InterestRate zeroRate, double discount, double eqRate)> rows)
-            {
-                foreach (var row in rows)
-                {
-                    table.Rows.Add(row.maturity, row.years, row.zeroRate.rate(), row.eqRate, row.discount);
-                }
-            }
-            void FillColumnHeaders(DataTable table)
-            {
-                table.Columns.AddRange(new[]
-                {
-                    new DataColumn("Maturity", typeof(string)),
-                    new DataColumn("TimesToMaturity", typeof(string)),
-                    new DataColumn("Zero Coupon Rate: R", typeof(string)),
-                    new DataColumn("Equivalent Rate: Rc", typeof(string)),
-                    new DataColumn("Discount Rate: B", typeof(string))
-                });
-            }
+            AddCharts();           
         }
 
         private void AddCharts()
@@ -167,6 +148,55 @@ namespace QuantBook.Ch10
                 XValueMember = "TimesToMaturity",
                 YValueMembers = "Discount Rate: B",
             });
+        }
+
+        private static void FillDataTable(DataTable table, List<(Date maturity, double years, double zeroRate, double eqRate, double discount)> rows)
+        {
+            foreach (var row in rows)
+            {
+                table.Rows.Add(row.maturity, row.years, row.zeroRate, row.eqRate, row.discount);
+            }
+        }
+
+        private static void FillHeaders(DataTable table)
+        {
+            table.Columns.AddRange(new[]
+            {
+                    new DataColumn("Maturity", typeof(string)),
+                    new DataColumn("TimesToMaturity", typeof(string)),
+                    new DataColumn("Zero Coupon Rate: R", typeof(string)),
+                    new DataColumn("Equivalent Rate: Rc", typeof(string)),
+                    new DataColumn("Discount Rate: B", typeof(string))
+                });
+        }
+
+        public void StartInterbank()
+        {
+            var settlementDate = new Date(18, 2, 2015);
+            var depositRates = new double[] { 0.001375, 0.001717, 0.002112, 0.002581 };
+            var depositMaturities = new Period[]
+            {
+                new Period(1, TimeUnit.Weeks),
+                new Period(1, TimeUnit.Months),
+                new Period(2, TimeUnit.Months),
+                new Period(3, TimeUnit.Months)
+            };
+            double[] futurePrices = new double[] { 99.725, 99.585, 99.385, 99.16, 98.93, 98.715 };
+            double[] swapRates = new double[] { 0.0089268, 0.0123343, 0.0147985, 0.0165843, 0.0179191 };
+            var swapMaturities = new Period[]
+            {
+                new Period(2, TimeUnit.Years),
+                new Period(3, TimeUnit.Years),
+                new Period(4, TimeUnit.Years),
+                new Period(5, TimeUnit.Years),
+                new Period(6, TimeUnit.Years)
+            };
+            DataTable dt = new DataTable();
+            FillHeaders(dt);
+            FillDataTable(dt, QuantLibFIHelper.InterbankZeroCoupon(settlementDate, depositRates, depositMaturities, futurePrices, swapRates, swapMaturities));
+
+            ZcTable2 = dt;
+            AddCharts();            
         }
     }
 }
