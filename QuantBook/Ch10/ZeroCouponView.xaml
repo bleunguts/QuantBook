@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:QuantBook.Models.ChartModel"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid Margin="30">
@@ -26,7 +27,10 @@
             </Grid.RowDefinitions>
             <DataGrid ColumnWidth="Auto" CanUserAddRows="False" ItemsSource="{Binding ZcTable1}" Grid.Column="0"/>
             <DataGrid ColumnWidth="Auto" CanUserAddRows="False" ItemsSource="{Binding ZcTable2}" Grid.Column="1"/>
-            
+            <local:MsChart SeriesCollection="{Binding LineSeriesCollection1}" DataSource="{Binding ZcTable2}" ChartBackground="Blue" 
+                           Title="Zero-Coupon Yield" Grid.Column="0" Grid.Row="1" XLabel="Times to MAturity" YLabel="Zero-Coupon Rate" />
+            <local:MsChart SeriesCollection="{Binding LineSeriesCollection2}" DataSource="{Binding ZcTable2}" ChartBackground="Red"
+                           Title="Discount Yield" Grid.Column="1" Grid.Row="1" XLabel="Times to Maturity" YLabel="Discount Rate"/>
         </Grid>
     </Grid>
 </UserControl>
