@@ -266,7 +266,7 @@ namespace QuantBook.Models.FixedIncome
             return (npv, cprice, dprice, accrued, ytm, zSpreadResults);
         }
 
-        public static (double npv, double hazardRate, double fairSpread, double defaultProbability, double survivalpProbability) CdsPv(Protection.Side side, string ccy, Date evalDate, Date effectiveDate, Date maturity, double recoveryRate, string spreads, string tenors, int notional, Frequency couponFrequency, double coupon)
+        public static (double npv, double hazardRate, double fairSpread, double defaultProbability, double survivalpProbability) CdsPv(Protection.Side side, string ccy, Date evalDate, Date effectiveDate, Date maturity, double recoveryRate, string spreads, string tenors, double notional, Frequency couponFrequency, double coupon)
         {
             Calendar calendar = new TARGET();
             evalDate = calendar.adjust(evalDate);
@@ -275,7 +275,7 @@ namespace QuantBook.Models.FixedIncome
             var termStructureCurve = new Handle<YieldTermStructure>(IsdaZeroCurve(evalDate, ccy));
 
             // construct proability curve based on hazardRate
-            Handle<Quote> hazardRate = new Handle<Quote>(new SimpleQuote(0.01234));
+            Handle<Quote> hazardRate = new Handle<Quote>(new SimpleQuote(1.0E-12));
             RelinkableHandle<DefaultProbabilityTermStructure> probabilityCurve =
                new RelinkableHandle<DefaultProbabilityTermStructure>();
             probabilityCurve.linkTo(new FlatHazardRate(0, calendar, hazardRate, new Actual360()));            
@@ -289,6 +289,40 @@ namespace QuantBook.Models.FixedIncome
             var defaultProbability = probabilityCurve.link.defaultProbability(evalDate, maturity);
             var survivalProbability = probabilityCurve.link.survivalProbability(maturity);
             return (npv, hazardRate_, creditDefaultSwap.fairSpread(), defaultProbability, survivalProbability);
+        }
+
+        public static (double accrual, double upfront, double cleanPrice, double dirtyPrice, double dv01) CdsPrice(Protection.Side side, string ccy, Date evalDate, Date effectiveDate, Date maturity, double recoveryRate, string spreads, string tenors, Frequency couponFrequency, double coupon)
+        {
+            double notional = 100.0;
+            int numDays = Utilities.get_number_calendar_days(effectiveDate, evalDate) + 1;
+
+            var cds = CdsPv(side, ccy, evalDate, effectiveDate, maturity, recoveryRate, spreads, tenors, notional, couponFrequency, coupon);
+
+            double accrual = coupon * numDays / 360.0 / 100.0;
+            double upfront = cds.npv;
+            double? dirtyPrice = null;
+            double? cleanPrice = null;
+            switch(side)
+            {
+                case Protection.Side.Buyer:
+                    accrual = -accrual;
+                    dirtyPrice = 100 - upfront;
+                    cleanPrice = dirtyPrice + accrual;
+
+                    break;
+                case Protection.Side.Seller:
+                    dirtyPrice = 100 + upfront;
+                    cleanPrice = dirtyPrice - accrual;
+
+                    break;
+            }
+
+            double parSpread = cds.fairSpread;
+            double coupon1 = parSpread + 1.0;
+            var cds2 = CdsPv(side, ccy, evalDate, effectiveDate, maturity, recoveryRate, spreads, tenors, notional, couponFrequency, coupon1);
+            double dv01 = cds2.npv;
+
+            return (accrual, upfront, cleanPrice.Value, dirtyPrice.Value, dv01);
         }
 
         public static (double? npv, double? cprice, double? dprice, double? accrued, double? ytm) BondPriceCurveRate(double faceValue = 100,

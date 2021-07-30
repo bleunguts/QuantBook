@@ -70,5 +70,10 @@ namespace QuantBook.Models
             }
             return theIsdaRates;
         }
+
+        public static Protection.Side ToSide(this string s)
+        {
+            return s.ToUpper() == "BUYER" ? Protection.Side.Buyer : Protection.Side.Seller;
+        }
     }
 }

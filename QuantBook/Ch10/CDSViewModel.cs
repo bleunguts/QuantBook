@@ -1,5 +1,6 @@
 ﻿using Caliburn.Micro;
 using QLNet;
+using QuantBook.Models;
 using QuantBook.Models.FixedIncome;
 using System;
 using System.Collections.Generic;
@@ -204,7 +205,7 @@ namespace QuantBook.Ch10
                 new DataColumn("Name", typeof(string)),
                 new DataColumn("Value", typeof(string)),                
             });
-            var result = QuantLibFIHelper.CdsPv(ToSide(protectionSide), "USD", EvalDate, EffectiveDate, Maturity, RecoveryRate, Spreads, Tenors, Notional, Frequency.Quarterly, CdsCoupon);
+            var result = QuantLibFIHelper.CdsPv(protectionSide.ToSide(), "USD", EvalDate, EffectiveDate, Maturity, RecoveryRate, Spreads, Tenors, Notional, Frequency.Quarterly, CdsCoupon);
 
             dt.Rows.Add("Maturity", Maturity);
             dt.Rows.Add("Coupoon", CdsCoupon);
@@ -215,8 +216,27 @@ namespace QuantBook.Ch10
             dt.Rows.Add("SurvivalProbability", result.survivalpProbability);
 
             Table1 = dt; 
+        }
 
-            Protection.Side ToSide(string s) => s.ToUpper() == "BUYER" ? Protection.Side.Buyer : Protection.Side.Seller;
+
+        public void StartCdsPrice()
+        {
+            LineSeriesCollection1.Clear();
+            LineSeriesCollection2.Clear();
+
+            var cds = QuantLibFIHelper.CdsPrice(ProtectionSide.ToSide(), "USD", EvalDate, EffectiveDate, Maturity, RecoveryRate, Spreads, Tenors, Frequency.Quarterly, CdsCoupon);
+            DataTable dt = new DataTable();
+            dt.Columns.AddRange(new[]
+            {
+                new DataColumn("Name", typeof(string)),
+                new DataColumn("Value", typeof(string)),
+            });
+            dt.Rows.Add("Accrual", cds.accrual);
+            dt.Rows.Add("Upfront", cds.upfront);
+            dt.Rows.Add("CleanPrice", cds.cleanPrice);
+            dt.Rows.Add("DirtyPrice", cds.dirtyPrice);
+            dt.Rows.Add("RiskyAnnuity", cds.dv01);
+            Table2 = dt;
         }
 
     }
