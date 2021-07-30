@@ -266,7 +266,18 @@ namespace QuantBook.Models.FixedIncome
             return (npv, cprice, dprice, accrued, ytm, zSpreadResults);
         }
 
-        public static (double npv, double hazardRate, double fairSpread, double defaultProbability, double survivalpProbability) CdsPv(Protection.Side side, string ccy, Date evalDate, Date effectiveDate, Date maturity, double recoveryRate, string spreads, string tenors, double notional, Frequency couponFrequency, double coupon)
+        public static (double npv, double hazardRate, double fairSpread, double defaultProbability, double survivalpProbability) CdsPv(Protection.Side side,
+                                                                                                                                       string ccy,
+                                                                                                                                       Date evalDate,
+                                                                                                                                       Date effectiveDate,
+                                                                                                                                       Date maturity,
+                                                                                                                                       double recoveryRate,
+                                                                                                                                       string spreads,
+                                                                                                                                       string tenors,
+                                                                                                                                       double hazardRateForProbCurve = 1.0E-12,
+                                                                                                                                       double notional,
+                                                                                                                                       Frequency couponFrequency,
+                                                                                                                                       double coupon)
         {
             Calendar calendar = new TARGET();
             evalDate = calendar.adjust(evalDate);
@@ -284,6 +295,7 @@ namespace QuantBook.Models.FixedIncome
             var creditDefaultSwap = new CreditDefaultSwap(side, notional, coupon / 10_000, schedule, BusinessDayConvention.ModifiedFollowing, new ActualActual(), false);
             var engine = new MidPointCdsEngine(probabilityCurve, recoveryRate, termStructureCurve);
             creditDefaultSwap.setPricingEngine(engine);
+
             var npv = creditDefaultSwap.NPV();
             var hazardRate_ = creditDefaultSwap.impliedHazardRate(npv, termStructureCurve, new ActualActual());
             var defaultProbability = probabilityCurve.link.defaultProbability(evalDate, maturity);
@@ -291,7 +303,16 @@ namespace QuantBook.Models.FixedIncome
             return (npv, hazardRate_, creditDefaultSwap.fairSpread(), defaultProbability, survivalProbability);
         }
 
-        public static (double accrual, double upfront, double cleanPrice, double dirtyPrice, double dv01) CdsPrice(Protection.Side side, string ccy, Date evalDate, Date effectiveDate, Date maturity, double recoveryRate, string spreads, string tenors, Frequency couponFrequency, double coupon)
+        public static (double accrual, double upfront, double cleanPrice, double dirtyPrice, double dv01) CdsPrice(Protection.Side side,
+                                                                                                                   string ccy,
+                                                                                                                   Date evalDate,
+                                                                                                                   Date effectiveDate,
+                                                                                                                   Date maturity,
+                                                                                                                   double recoveryRate,
+                                                                                                                   string spreads,
+                                                                                                                   string tenors,
+                                                                                                                   Frequency couponFrequency,
+                                                                                                                   double coupon)
         {
             double notional = 100.0;
             int numDays = Utilities.get_number_calendar_days(effectiveDate, evalDate) + 1;
@@ -443,10 +464,6 @@ namespace QuantBook.Models.FixedIncome
             Settings.setEvaluationDate(evalDate);
 
             /*
-            for (int i = 0; i < periods.Length; i++)
-            {
-                new Spread
-            }
             List<double> defaultProbabilities = new List<double>();
             defaultProbabilities.Add(0.0000);
             defaultProbabilities.Add(0.0047);

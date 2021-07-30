@@ -31,7 +31,8 @@ namespace QuantBook.Ch10
             Spreads = "34.93,53.60,72.02,106.39,129.39,139.46";
             Tenors = "1Y,2Y,3Y,5Y,7Y,10Y";
             RecoveryRate = 0.4;
-            InitializeCds1();
+            //InitializeCds1();
+            InitializeCds2();
         }
         private void InitializeCds1()
         {
@@ -40,6 +41,19 @@ namespace QuantBook.Ch10
             Maturity = new DateTime(2014, 6, 20);
             Spreads = "10";
             Tenors = "5Y";
+            RecoveryRate = 0.4;
+            CdsCoupon = 100;
+            Notional = 10_000;
+            ProtectionSide = "Buyer";
+        }
+
+        private void InitializeCds2()
+        {
+            EvalDate = new DateTime(2015, 5, 15);
+            EffectiveDate = new DateTime(2015, 3, 20);
+            Maturity = new DateTime(2018, 6, 20);
+            Spreads = "34.93,53.60,72.02,106.39,129.39,139.46";
+            Tenors = "1Y,2Y,3Y,5Y,7Y,10Y";
             RecoveryRate = 0.4;
             CdsCoupon = 100;
             Notional = 10_000;

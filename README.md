@@ -11,8 +11,8 @@ Skipped these sections below:
 	* Implement other engines Binomiall Jarrow Rudd, Binomial Additive Quiprobabilities, Binomial Trigeorgis,
 		Binomial Tian, Binomial Leisen Remier, Binomial Joshi, FiniteDifference, Integral, PseudoMonto Carlo, Quasi MonteCarlo
 * Pricing Fixed Income 	
-	* CDS Pricing Engine (big and interesting topic, it requires using IsdaHelper to fetch ISDA CDS standardized rates from the web which I think has been taken down)		
-		* Hazard Rate valuation (need to think of alternative way to get hazard rates based on spreads, or use the quantlib features)
+	* CDS Pricing Engine largely done
+		* used a single hazard rate to price CDS contract, skipped the method of bootstrap a hazard rate with spreads
     * Callable Bonds
 	* Convertible Bonds			
 * Pricing Exotic Options using QuantLib (I already wrote the coded version, this about using the lib) pg 431
