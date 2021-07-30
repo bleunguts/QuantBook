@@ -157,5 +157,24 @@ namespace QuantBook.Ch10
             dt.Rows.Add("YTM", ytm);
             BondTable = dt;
         }
+
+        public void StartZSpread()
+        {
+            DataTable dt = new DataTable();
+            dt.Columns.AddRange(new[]
+            {
+                new DataColumn("ZSpread", typeof(double)),
+                new DataColumn("Price", typeof(double))
+            });
+            var faceValue = 100.0;
+            var coupon = 0.05;
+            (double? npv, double? cprice, double? dprice, double? accrued, double? ytm, List<(double zSpread, double npv)> zResults) = QuantLibFIHelper.BondPriceCurveRateZSpread(faceValue, coupon);
+
+            foreach(var z in zResults)
+            {
+                dt.Rows.Add(z.zSpread, z.npv);
+            }
+            BondTable = dt;
+        }
     }
 }

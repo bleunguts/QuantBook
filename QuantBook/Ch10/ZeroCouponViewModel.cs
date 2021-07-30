@@ -56,6 +56,8 @@ namespace QuantBook.Ch10
 
         public void StartZeroCoupon0()
         {
+            ResetScreen();
+
             var dt = new DataTable();
             FillColumnHeaders(dt);
 
@@ -70,7 +72,7 @@ namespace QuantBook.Ch10
             var faceAmount = 100.0;
             var coupons = new List<double> { 0.05, 0.055, 0.05, 0.06 };
             var bondPrices = new List<double> { 101.0, 101.5, 99.0, 100.0 };
-            FillDataTable(dt, QuantLibFIHelper.ZeroCouponDirect(faceAmount, evalDate, coupons, bondPrices, maturities));
+            FillDataTable(dt, QuantLibFIHelper.ZeroCouponDirect(faceAmount, evalDate, coupons, bondPrices, maturities));            
             ZcTable1 = dt;
 
             void FillDataTable(DataTable table, List<(DateTime maturity, double couponRate, double equivalentRate, double discountRate)> rows)
@@ -95,6 +97,8 @@ namespace QuantBook.Ch10
 
         public void StartZeroCoupon1()
         {
+            ResetScreen();
+
             const double faceAmount = 100.0;
             Date evalDate = new Date(15, Month.January, 2015);
             var depositRates = new double[] { 0.044, 0.045, 0.046, 0.047, 0.049, 0.051, 0.053 };
@@ -238,6 +242,8 @@ namespace QuantBook.Ch10
 
         public void StartInterbank()
         {
+            ResetScreen();
+
             var settlementDate = new Date(18, 2, 2015);
             var depositRates = new double[] { 0.001375, 0.001717, 0.002112, 0.002581 };
             var depositMaturities = new Period[]
@@ -262,11 +268,21 @@ namespace QuantBook.Ch10
             FillDataTable(dt, QuantLibFIHelper.InterbankZeroCoupon(settlementDate, depositRates, depositMaturities, futurePrices, swapRates, swapMaturities));
 
             ZcTable2 = dt;
-            AddCharts();            
+            AddCharts();
+        }
+
+        private void ResetScreen()
+        {
+            ZcTable1 = new DataTable();
+            ZcTable2 = new DataTable();
+            LineSeriesCollection1.Clear();
+            LineSeriesCollection2.Clear();
         }
 
         public void StartZSpread()
         {
+            ResetScreen();
+
             var depositRates = new double[] { 0.0525, 0.055 };
             var depositMaturities = new Period[]
             {
