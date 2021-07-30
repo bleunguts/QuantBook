@@ -1,4 +1,5 @@
 ﻿using Caliburn.Micro;
+using QLNet;
 using QuantBook.Models.FixedIncome;
 using System;
 using System.Collections.Generic;
@@ -54,8 +55,20 @@ namespace QuantBook.Ch10
                 new DataColumn("Equivalent Rate: Rc", typeof(string)),
                 new DataColumn("Discount Rate: B", typeof(string))
             });
-            List<(DateTime maturity, double couponRate, double equivalentRate, double discountRate)> rows = QuantLibFIHelper.ZeroCouponDirect();
-            foreach(var row in rows)
+
+            Date evalDate = new Date(15, Month.Jan, 2015);
+            Date[] maturities = new Date[]
+            {
+                new Date(15, Month.January, 2016),
+                new Date(15, Month.January, 2017),
+                new Date(15, Month.January, 2018),
+                new Date(15, Month.January, 2019),
+            };
+            var faceAmount = 100.0;
+            var coupons = new List<double> { 0.05, 0.055, 0.05, 0.06 };
+            var bondPrices = new List<double> { 101.0, 101.5, 99.0, 100.0 };
+
+            foreach (var row in QuantLibFIHelper.ZeroCouponDirect(faceAmount, coupons, bondPrices, evalDate, maturities))
             {
                 dt.Rows.Add(row.maturity, row.couponRate, row.equivalentRate, row.discountRate);
             }
