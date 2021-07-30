@@ -1,0 +1,38 @@
+﻿<UserControl x:Class="QuantBook.Ch10.CDSView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:QuantBook.Ch10"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid Margin="30">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Margin="0 0 10 0" >
+            <TextBlock Text="Evaluation Date"/>
+            <TextBox x:Name="EvalDate" Width="150" Margin="0 2 0 0"/>
+            <TextBlock Text="Spreads" Margin="0 10 0 0"/>
+            <TextBox x:Name="Spreads" Width="150" Height="60" Margin="0 2 0 0" AcceptsReturn="True" TextWrapping="Wrap"/>
+            <TextBlock Text="Tenors" Margin="0 10 0 0"/>
+            <TextBox x:Name="Tenors" Width="150" Height="40" Margin="0 2 0 0" AcceptsReturn="True" TextWrapping="Wrap"/>
+            <TextBlock Text="Recovery Rate" Margin="0 10 0 0"/>
+            <TextBox x:Name="RecoveryRate" Width="150" Margin="0 2 0 0"/>
+            <Button x:Name="HazardRate" Content="Start Hazard Rate" Width="150" Margin="0 20 0 0"/>
+        </StackPanel>
+        <Grid Grid.Column="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <DataGrid ColumnWidth="Auto" CanUserAddRows="False" ItemsSource="{Binding Table1}" Grid.Column="0" SelectionUnit="Cell"/>
+            <DataGrid ColumnWidth="Auto" CanUserAddRows="False" ItemsSource="{Binding Table2}" Grid.Column="1" SelectionUnit="Cell"/>
+        </Grid>
+    </Grid>
+</UserControl>

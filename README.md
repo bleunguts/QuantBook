@@ -13,8 +13,10 @@ Skipped these sections below:
 	* Barrier Options
 	* Bermudan Options
 * Pricing Fixed Income 	
-	* Callable Bonds
-	* Convertible Bonds
+    * Callable Bonds
+	* Convertible Bonds	
 	* CDS pricing
+	** Hazard Rate valuation (need to think of alternative way to get hazard rates based on spreads, or use the quantlib features)
+	** CDS Pricing Engine (big and interesting topic, it requires using IsdaHelper to fetch ISDA CDS standardized rates from the web which I think has been taken down)	
 	** Zero Coupon & Interbank Zero Coupon (ignored graphing)
 	** Credit Spread Term Structures (ignored graphing)
