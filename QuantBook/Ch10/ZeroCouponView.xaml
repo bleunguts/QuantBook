@@ -12,9 +12,14 @@
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
         <StackPanel>
-            <Button x:Name="StartZeroCoupon0" Content="Start Zero Coupon 0" Width="150" Margin="0 0 0 0"/>
-            <Button x:Name="StartZeroCoupon1" Content="Start Zero Coupon 1" Width="150" Margin="0 20 0 0"/>
-            <Button x:Name="StartZeroCoupon2" Content="Start Zero Coupon 2" Width="150" Margin="0 20 0 0"/>
+            <Button x:Name="StartZeroCoupon0" Content="Zero Coupon Direct" Width="150" Margin="0 0 0 0"/>
+            <Button x:Name="StartZeroCoupon1" Content="Zero Coupon Bootstrap" Width="150" Margin="0 20 0 0"/>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="zSpread: "/>
+                <TextBox x:Name="ZSpread"/>
+            </StackPanel>
+            <Button x:Name="StartZSpread" Content="Zero Coupon zSpread" Width="150" Margin="0 20 0 0"/>
+            <Button x:Name="StartInterbank" Content="Interbank Zero Coupon" Width="150" Margin="0 20 0 0"/>
         </StackPanel>
         <Grid Grid.Column="1">
             <Grid.ColumnDefinitions>
@@ -28,7 +33,7 @@
             <DataGrid ColumnWidth="Auto" CanUserAddRows="False" ItemsSource="{Binding ZcTable1}" Grid.Column="0"/>
             <DataGrid ColumnWidth="Auto" CanUserAddRows="False" ItemsSource="{Binding ZcTable2}" Grid.Column="1"/>
             <local:MsChart SeriesCollection="{Binding LineSeriesCollection1}" DataSource="{Binding ZcTable2}" ChartBackground="Blue" 
-                           Title="Zero-Coupon Yield" Grid.Column="0" Grid.Row="1" XLabel="Times to MAturity" YLabel="Zero-Coupon Rate" />
+                           Title="Zero-Coupon Yield" Grid.Column="0" Grid.Row="1" XLabel="Times to Maturity" YLabel="Zero-Coupon Rate" />
             <local:MsChart SeriesCollection="{Binding LineSeriesCollection2}" DataSource="{Binding ZcTable2}" ChartBackground="Red"
                            Title="Discount Yield" Grid.Column="1" Grid.Row="1" XLabel="Times to Maturity" YLabel="Discount Rate"/>
         </Grid>

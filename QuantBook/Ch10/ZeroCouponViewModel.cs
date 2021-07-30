@@ -45,6 +45,15 @@ namespace QuantBook.Ch10
             set { zcTable2 = value; NotifyOfPropertyChange(() => ZcTable2); }
         }
 
+
+        private double zSpread = 50;
+
+        public double ZSpread
+        {
+            get { return zSpread = 50; }
+            set { zSpread = value; NotifyOfPropertyChange(() => ZSpread); }
+        }
+
         public void StartZeroCoupon0()
         {
             var dt = new DataTable();
@@ -147,6 +156,42 @@ namespace QuantBook.Ch10
                 ChartType = SeriesChartType.Line,
                 XValueMember = "TimesToMaturity",
                 YValueMembers = "Discount Rate: B",
+                Name="B"
+            });
+        }
+
+        private void AddChartsWithZSpread()
+        {
+            LineSeriesCollection1.Clear();
+            LineSeriesCollection1.Add(new Series()
+            {
+                ChartType = SeriesChartType.Line,
+                XValueMember = "TimesToMaturity",
+                YValueMembers = "Zero Coupon Rate: R",
+                Name = "R"
+            });
+            LineSeriesCollection1.Add(new Series()
+            {
+                ChartType = SeriesChartType.Line,
+                XValueMember = "TimesToMaturity",
+                YValueMembers = "Zero Coupon Rate: R with ZSpread",
+                Name = "R with ZSpread"
+            });
+
+            LineSeriesCollection2.Clear();
+            LineSeriesCollection2.Add(new Series()
+            {
+                ChartType = SeriesChartType.Line,
+                XValueMember = "TimesToMaturity",
+                YValueMembers = "Discount Rate: B",
+                Name= "B"
+            });
+            LineSeriesCollection2.Add(new Series()
+            {
+                ChartType = SeriesChartType.Line,
+                XValueMember = "TimesToMaturity",
+                YValueMembers = "Discount Rate: B with ZSpread",
+                Name = "B with ZSpread"
             });
         }
 
@@ -167,6 +212,27 @@ namespace QuantBook.Ch10
                     new DataColumn("Zero Coupon Rate: R", typeof(string)),
                     new DataColumn("Equivalent Rate: Rc", typeof(string)),
                     new DataColumn("Discount Rate: B", typeof(string))
+                });
+        }
+
+        private static void FillDataTableWithZSpread(DataTable table, List<(Date maturity, double years, double zeroRate, double zeroRateZSpreaded, double discount, double discountZSpreaded)> rows)
+        {
+            foreach (var row in rows)
+            {
+                table.Rows.Add(row.maturity, row.years, row.zeroRate, row.zeroRateZSpreaded, row.discount, row.discountZSpreaded);
+            }
+        }
+
+        private static void FillHeadersWithZSpread(DataTable table)
+        {
+            table.Columns.AddRange(new[]
+            {
+                    new DataColumn("Maturity", typeof(string)),
+                    new DataColumn("TimesToMaturity", typeof(string)),
+                    new DataColumn("Zero Coupon Rate: R", typeof(string)),
+                    new DataColumn("Zero Coupon Rate: R with ZSpread", typeof(string)),
+                    new DataColumn("Discount Rate: B", typeof(string)),
+                    new DataColumn("Discount Rate: B with ZSpread", typeof(string))
                 });
         }
 
@@ -197,6 +263,38 @@ namespace QuantBook.Ch10
 
             ZcTable2 = dt;
             AddCharts();            
+        }
+
+        public void StartZSpread()
+        {
+            var depositRates = new double[] { 0.0525, 0.055 };
+            var depositMaturities = new Period[]
+            {
+                new Period(6, TimeUnit.Months),
+                new Period(12, TimeUnit.Months),
+            };
+            double[] bondCoupons = new double[] { 0.0575, 0.06, 0.0625, 0.065, 0.0675, 0.068, 0.07, 0.071, 0.0715, 0.072, 0.073, 0.0735, 0.074, 0.075, 0.076, 0.076, 0.077, 0.078 };
+            double[] bondPrices = new double[bondCoupons.Length];
+            for (int i = 0; i < bondCoupons.Length; i++)
+            {
+                bondPrices[i] = 100.0;
+            }
+            Period[] bondMaturities = new Period[bondCoupons.Length];
+            for (int i = 0; i < bondCoupons.Length; i++)
+            {
+                bondMaturities[i] = new Period((i + 3) * 6, TimeUnit.Months);
+            }
+            DataTable dt1 = new DataTable();
+            DataTable dt2 = new DataTable();
+
+            FillHeadersWithZSpread(dt1);
+            FillHeadersWithZSpread(dt2);
+            FillDataTableWithZSpread(dt1, QuantLibFIHelper.ZeroCouponBootstrapZspread(depositRates, depositMaturities, bondPrices, bondCoupons, bondMaturities, zSpread));
+            FillDataTableWithZSpread(dt2, QuantLibFIHelper.ZeroCouponBootstrapZspread(depositRates, depositMaturities, bondPrices, bondCoupons, bondMaturities, zSpread));
+
+            ZcTable1 = dt1;
+            ZcTable2 = dt2;
+            AddChartsWithZSpread();
         }
     }
 }
