@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:QuantBook.Ch10"
+             xmlns:local="clr-namespace:QuantBook.Models.ChartModel"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid Margin="30">
@@ -33,6 +33,10 @@
             </Grid.RowDefinitions>
             <DataGrid ColumnWidth="Auto" CanUserAddRows="False" ItemsSource="{Binding Table1}" Grid.Column="0" SelectionUnit="Cell"/>
             <DataGrid ColumnWidth="Auto" CanUserAddRows="False" ItemsSource="{Binding Table2}" Grid.Column="1" SelectionUnit="Cell"/>
+            <local:MsChart SeriesCollection="{Binding LineSeriesCollection1}" DataSource="{Binding Table2}" ChartBackground="Blue"
+                           Title="{Binding Title1}" Grid.Column="0" Grid.Row="1" XLabel="{Binding XLabel1}" YLabel="{Binding YLabel1}"/>
+            <local:MsChart SeriesCollection="{Binding LineSeriesCollection2}" DataSource="{Binding Table2}" ChartBackground="Red"
+                           Title="{Binding Title2}" Grid.Column="1" Grid.Row="1" XLabel="{Binding XLabel2}" YLabel="{Binding YLabel2}"/>
         </Grid>
     </Grid>
 </UserControl>
