@@ -278,6 +278,7 @@ namespace QuantBook.Models.FixedIncome
                                                                                                                                        Frequency couponFrequency,
                                                                                                                                        double coupon)
         {
+            Actual365Fixed dayCounter = new Actual365Fixed();
             Calendar calendar = new TARGET();
             evalDate = calendar.adjust(evalDate);
             Date settlementDate = calendar.advance(evalDate, new Period(2, TimeUnit.Days));
@@ -288,6 +289,7 @@ namespace QuantBook.Models.FixedIncome
             double[] spreads = spreadsInBasisPoints.Select(s => Convert.ToDouble(s) / 10_000.0).ToArray();
             Date[] termDates = new List<Date> { evalDate }.Concat(tenors.ToPeriods().Select(tenor => evalDate + tenor)).ToArray();
             var hazardRates = new List<double> { 0.0 }; //place holder for first item                     
+
             for (int i = 1; i < termDates.Length; i++)
             {
                 var d = termDates[i];
@@ -298,7 +300,7 @@ namespace QuantBook.Models.FixedIncome
 
                 double h = quotedTrade.impliedHazardRate(0.0,
                                                          discountCurve,
-                                                         new Actual365Fixed(),
+                                                         dayCounter,
                                                          recoveryRate,
                                                          1e-10,
                                                          PricingModel.ISDA);
@@ -308,16 +310,18 @@ namespace QuantBook.Models.FixedIncome
 
             RelinkableHandle<DefaultProbabilityTermStructure> defaultProbabilityCurve =
                          new RelinkableHandle<DefaultProbabilityTermStructure>();
-            defaultProbabilityCurve.linkTo(new InterpolatedHazardRateCurve<ForwardFlat>(new List<Date>(termDates), hazardRates, new Actual365Fixed()));
+            defaultProbabilityCurve.linkTo(new InterpolatedHazardRateCurve<BackwardFlat>(new List<Date>(termDates), hazardRates, dayCounter));
             defaultProbabilityCurve.link.enableExtrapolation(true);
 
             var schedule = new Schedule(effectiveDate, settlementDate, new Period(couponFrequency), calendar, BusinessDayConvention.Following, BusinessDayConvention.Following, DateGeneration.Rule.TwentiethIMM, false);
-            var creditDefaultSwap = new CreditDefaultSwap(side, notional, coupon / 10_000, schedule, BusinessDayConvention.ModifiedFollowing, new ActualActual(), false);
-            var engine = new MidPointCdsEngine(defaultProbabilityCurve, recoveryRate, discountCurve);
+            var creditDefaultSwap = new CreditDefaultSwap(side, notional, coupon / 10_000, schedule, BusinessDayConvention.ModifiedFollowing, dayCounter, true);
+ //           var engine = new MidPointCdsEngine(defaultProbabilityCurve, recoveryRate, discountCurve);
+            var engine = new IsdaCdsEngine(defaultProbabilityCurve, recoveryRate, discountCurve) ;
+
             creditDefaultSwap.setPricingEngine(engine);
 
             var npv = creditDefaultSwap.NPV();
-            var hazardRate_ = 100.0 * creditDefaultSwap.impliedHazardRate(npv, discountCurve, new ActualActual());
+            var hazardRate_ = 100.0 * creditDefaultSwap.impliedHazardRate(npv, discountCurve, dayCounter);
             var defaultProbability = 100.0 * defaultProbabilityCurve.link.defaultProbability(evalDate, maturity);
             var survivalProbability = 100.0 * defaultProbabilityCurve.link.survivalProbability(maturity);
             double fairSpread = 10_000 * creditDefaultSwap.fairSpread();
