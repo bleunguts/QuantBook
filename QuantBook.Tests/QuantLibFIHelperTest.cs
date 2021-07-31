@@ -235,31 +235,36 @@ namespace QuantBook.Tests
         }
 
         [Test]
-        [Ignore("QuantLib does not support creating HazardRateStructure based on spreads")]
-        public void WhenCalculatingCdsHazardRates()
+        public void WhenCalculatingCdsHazardRatesUsingDefaultProbabilitesCurveAsInput()
         {
             double[] spreads = new[] { 34.93, 53.60, 72.02, 106.39, 129.39, 139.46 };
-            string[] tenors = new[] { "1Y", "2Y", "3Y", "5Y", "7Y", "10Y"};
+            string[] tenors = new[] { "1Y", "2Y", "3Y", "5Y", "7Y", "10Y" };
             var evalDate = new Date(20, 3, 2015);
             var recoveryRate = 0.4;
-            var results = QuantLibFIHelper.CdsHazardRate(evalDate, recoveryRate, spreads, tenors, false);
             Console.WriteLine("CdsHazard rate: ");
-            foreach (var result in results)
-            {
-                Console.WriteLine($"CdsHazardRate with recoveryRate: {recoveryRate} for {evalDate} with spreads {string.Join(",", spreads)} results to hazardRate: {result.hazardRate}, m: {result.timesToMaturity}, surival={result.survivalProbability} %");
-                Assert.That(result.hazardRate, Is.GreaterThan(0));
-                Assert.That(result.defaultProbability, Is.GreaterThan(0));
-                Assert.That(result.survivalProbability, Is.GreaterThan(0));                
-            }
-
+            AssertResults(QuantLibFIHelper.CdsHazardRate(evalDate, recoveryRate, spreads, tenors, false));
             Console.WriteLine("CdsHazard rate data points: ");
-            results = QuantLibFIHelper.CdsHazardRate(evalDate, recoveryRate, spreads, tenors, true);
-            foreach (var result in results)
+            AssertResults(QuantLibFIHelper.CdsHazardRate(evalDate, recoveryRate, spreads, tenors, true));
+
+            void AssertResults(List<(Date evalDate, double timesToMaturity, double hazardRate, double survivalProbability, double defaultProbability)> hazardRateResults)
             {
-                Console.WriteLine($"CdsHazardRate with recoveryRate: {recoveryRate} for {evalDate} with spreads {string.Join(",", spreads)} results to hazardRate: {result.hazardRate}, m: {result.timesToMaturity}, surival={result.survivalProbability} %");
-                Assert.That(result.hazardRate, Is.GreaterThan(0));
-                Assert.That(result.defaultProbability, Is.GreaterThan(0));
-                Assert.That(result.survivalProbability, Is.GreaterThan(0));
+                foreach (var result in hazardRateResults)
+                {
+                    Console.WriteLine($"CdsHazardRate with recoveryRate: {recoveryRate} for {evalDate} with spreads {string.Join(",", spreads)} results to hazardRate: {result.hazardRate}, m: {result.timesToMaturity}, surival={result.survivalProbability} %");
+                    if (result.evalDate == evalDate)
+                    {
+                        Assert.That(result.hazardRate, Is.EqualTo(0));
+                        Assert.That(result.defaultProbability, Is.EqualTo(0));
+                        Assert.That(result.survivalProbability, Is.EqualTo(100));
+                    }
+                    else
+                    {
+                        Assert.That(result.hazardRate, Is.GreaterThan(0));
+                        Assert.That(result.defaultProbability, Is.GreaterThan(0));
+                        Assert.That(result.survivalProbability, Is.GreaterThan(0));
+                    }
+                    
+                }
             }
         }
 
