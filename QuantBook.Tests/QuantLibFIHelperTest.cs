@@ -233,37 +233,93 @@ namespace QuantBook.Tests
                 Assert.That(result.discountZSpreaded, Is.GreaterThan(0));
             }
         }
+        
 
         [Test]
-        public void WhenCalculatingCdsHazardRatesUsingDefaultProbabilitesCurveAsInput()
+        [Ignore("Not implemented")]
+        public void WhenCalculatingCdsHazardRatesUsingCreditSpreadCurveAsInput()
         {
             double[] spreads = new[] { 34.93, 53.60, 72.02, 106.39, 129.39, 139.46 };
             string[] tenors = new[] { "1Y", "2Y", "3Y", "5Y", "7Y", "10Y" };
             var evalDate = new Date(20, 3, 2015);
             var recoveryRate = 0.4;
-            Console.WriteLine("CdsHazard rate: ");
-            AssertResults(QuantLibFIHelper.CdsHazardRate(evalDate, recoveryRate, spreads, tenors, false));
-            Console.WriteLine("CdsHazard rate data points: ");
-            AssertResults(QuantLibFIHelper.CdsHazardRate(evalDate, recoveryRate, spreads, tenors, true));
 
-            void AssertResults(List<(Date evalDate, double timesToMaturity, double hazardRate, double survivalProbability, double defaultProbability)> hazardRateResults)
+            Assert.Fail("Not Implemented");
+        }
+
+        [Test]
+        public void WhenCalculatingCdsHazardRatesUsingFlatHazardRateAsInput()
+        {
+            var evalDate = new Date(20, 3, 2015);
+            var effectiveDate = evalDate + new Period(10, TimeUnit.Years);
+            double hazardRate = 1.0E-12;  // in basis points
+
+            var hazardRateMonthlyResults = QuantLibFIHelper.CdsHazardRate(evalDate, effectiveDate, hazardRate, ResultType.MonthlyResults);
+            var comment = string.Format($"hazard rate {evalDate} using flat hazard rate {hazardRate}");
+            Console.WriteLine("Monthly Results:");
+            AssertHazardRateResults(evalDate, comment, hazardRateMonthlyResults);
+            Console.WriteLine("From Input maturities:");
+            var hazardRateInputMaturities = QuantLibFIHelper.CdsHazardRate(evalDate, effectiveDate, hazardRate, ResultType.FromInputMaturities);
+            AssertHazardRateResults(evalDate, comment, hazardRateInputMaturities);
+
+        }
+
+        [Test]
+        public void WhenCalculatingCdsHazardRatesUsingDefaultProbabilitesCurveAsInput()
+        {            
+            var evalDate = new Date(20, 3, 2015);
+            
+            Calendar calendar = new TARGET();
+            List<Date> dates = new List<Date>
             {
-                foreach (var result in hazardRateResults)
+                evalDate,
+                calendar.advance(evalDate, 6, TimeUnit.Months, BusinessDayConvention.ModifiedFollowing),
+                calendar.advance(evalDate, 1, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing),
+                calendar.advance(evalDate, 2, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing),
+                calendar.advance(evalDate, 3, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing),
+                calendar.advance(evalDate, 4, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing),
+                calendar.advance(evalDate, 5, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing),
+                calendar.advance(evalDate, 7, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing),
+                calendar.advance(evalDate, 10, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing)
+            };
+
+            List<double> defaultProbabilities = new List<double>
+            {
+                0.0000,
+                0.0047,
+                0.0093,
+                0.0286,
+                0.0619,
+                0.0953,
+                0.1508,
+                0.2288,
+                0.3666
+            };
+
+            Console.WriteLine("CdsHazard rate: ");
+            var hazardRateMonthlyResults = QuantLibFIHelper.CdsHazardRate(evalDate, dates, defaultProbabilities, ResultType.MonthlyResults);
+            AssertHazardRateResults(evalDate, $"{evalDate} using default probabilities", hazardRateMonthlyResults);
+
+            Console.WriteLine("CdsHazard rate data points: ");
+            var hazardRateFromInputMaturities = QuantLibFIHelper.CdsHazardRate(evalDate, dates, defaultProbabilities, ResultType.FromInputMaturities);
+            AssertHazardRateResults(evalDate, $"{evalDate} using default probabilities", hazardRateFromInputMaturities);          
+        }
+
+        public static void AssertHazardRateResults(Date evalDate, string comment, List<(Date evalDate, double timesToMaturity, double hazardRate, double survivalProbability, double defaultProbability)> hazardRateResults)
+        {
+            foreach (var result in hazardRateResults)
+            {
+                Console.WriteLine($"CdsHazardRate with {comment}, results to hazardRate: {result.hazardRate}, maturity: {result.timesToMaturity}, surival: {result.survivalProbability}% default: {result.defaultProbability}%");
+                if (result.evalDate == evalDate)
                 {
-                    Console.WriteLine($"CdsHazardRate with recoveryRate: {recoveryRate} for {evalDate} with spreads {string.Join(",", spreads)} results to hazardRate: {result.hazardRate}, m: {result.timesToMaturity}, surival={result.survivalProbability} %");
-                    if (result.evalDate == evalDate)
-                    {
-                        Assert.That(result.hazardRate, Is.EqualTo(0));
-                        Assert.That(result.defaultProbability, Is.EqualTo(0));
-                        Assert.That(result.survivalProbability, Is.EqualTo(100));
-                    }
-                    else
-                    {
-                        Assert.That(result.hazardRate, Is.GreaterThan(0));
-                        Assert.That(result.defaultProbability, Is.GreaterThan(0));
-                        Assert.That(result.survivalProbability, Is.GreaterThan(0));
-                    }
-                    
+                    Assert.That(result.defaultProbability, Is.EqualTo(0));
+                    Assert.That(result.survivalProbability, Is.EqualTo(100));
+                }
+                else
+                {
+                    Assert.That(result.hazardRate, Is.GreaterThan(0));
+                    Assert.That(result.defaultProbability, Is.GreaterThan(0));
+                    Assert.That(result.survivalProbability, Is.GreaterThan(0));
                 }
             }
         }

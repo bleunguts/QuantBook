@@ -210,7 +210,7 @@ namespace QuantBook.Models.FixedIncome
                     throw new NotSupportedException($"Unsupported Result type {resultType}");
             }
             return result;
-        }
+        }      
 
         public static (double? npv, double? cprice, double? dprice, double? accrued, double? ytm, List<(double zSpread, double npv)> zResults) BondPriceCurveRateZSpread(double faceValue,
                                                                                                                                                                          double coupon)
@@ -449,7 +449,68 @@ namespace QuantBook.Models.FixedIncome
             }
 
             return results;
-        }    
+        }
+
+        public static List<(Date evalDate, double timesToMaturity, double hazardRate, double survivalProbability, double defaultProbability)> CdsHazardRate(
+            Date evalDate,
+            Date effectiveDate,
+            double hazardRateForProbCurve,
+            ResultType resultType = ResultType.MonthlyResults)
+        {
+            DayCounter dayCounter = new Actual365Fixed();
+            Calendar calendar = new TARGET();
+            evalDate = calendar.adjust(evalDate);
+            Settings.setEvaluationDate(evalDate);
+
+            Handle<Quote> hazardRate = new Handle<Quote>(new SimpleQuote(hazardRateForProbCurve));
+            RelinkableHandle<DefaultProbabilityTermStructure> defaultProbabilityCurve =
+               new RelinkableHandle<DefaultProbabilityTermStructure>();
+            defaultProbabilityCurve.linkTo(new FlatHazardRate(0, calendar, hazardRate, new Actual360()));
+
+            var dates = new List<Date>
+            {
+                evalDate,
+                calendar.advance(evalDate, 6, TimeUnit.Months, BusinessDayConvention.ModifiedFollowing),
+                calendar.advance(evalDate, 1, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing),
+                calendar.advance(evalDate, 2, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing),
+                calendar.advance(evalDate, 3, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing),
+                calendar.advance(evalDate, 4, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing),
+                calendar.advance(evalDate, 5, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing),
+                calendar.advance(evalDate, 7, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing),
+                calendar.advance(evalDate, 10, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing)
+            };
+
+            var results = new List<(Date evalDate, double timesToMaturity, double hazardRate, double survivalProbability, double defaultProbability)>();           
+            switch (resultType)
+            {
+                case ResultType.FromInputMaturities:
+                    foreach (var d in dates)
+                    {
+                        var years = dayCounter.yearFraction(evalDate, d);
+                        var hazard = 100.0 * defaultProbabilityCurve.link.hazardRate(d);
+                        var survivalProbability = 100.0 * defaultProbabilityCurve.link.survivalProbability(d);
+                        var defaultProbability = 100.0 * defaultProbabilityCurve.link.defaultProbability(d);
+                        results.Add((d, Math.Round(years, 2), hazard, survivalProbability, defaultProbability));
+                    }
+                    break;
+                case ResultType.MonthlyResults:
+                    Date dd = evalDate;
+                    Date lastDate = dates.Last();
+                    while (dd < lastDate)
+                    {
+                        var years = dayCounter.yearFraction(evalDate, dd);
+                        var hazard = 100.0 * defaultProbabilityCurve.link.hazardRate(dd);
+                        var survivalProbability = 100.0 * defaultProbabilityCurve.link.survivalProbability(dd);
+                        var defaultProbability = 100.0 * defaultProbabilityCurve.link.defaultProbability(dd);
+                        results.Add((dd, Math.Round(years, 2), hazard, survivalProbability, defaultProbability));
+                        dd = dd + (new Period(1, TimeUnit.Days));
+                    }
+                    break;
+                default:
+                    throw new NotSupportedException($"Unrecognised resultType: {resultType}");
+            }
+            return results;
+        }
 
         /// <summary>
         /// There are several different types of inputs that can be used to value the CDS Hazard Rate
@@ -459,38 +520,14 @@ namespace QuantBook.Models.FixedIncome
         /// </summary>      
 
         public static List<(Date evalDate, double timesToMaturity, double hazardRate, double survivalProbability, double defaultProbability)> CdsHazardRate(Date evalDate,
-                                                                                                                                                            double recoveryRate,
-                                                                                                                                                            double[] spreads,
-                                                                                                                                                            string[] tenors,
-                                                                                                                                                            bool isDataPoints)
+                                                                                                                                                            List<Date> dates,
+                                                                                                                                                            List<double> defaultProbabilities,
+                                                                                                                                                            ResultType resultType = ResultType.MonthlyResults)
         {
             DayCounter dayCounter = new Actual365Fixed();
-            Period[] periods = tenors.ToPeriods();
             Calendar calendar = new TARGET();
             evalDate = calendar.adjust(evalDate);
-            Settings.setEvaluationDate(evalDate);
-
-            List<Date> dates = new List<Date>();
-            dates.Add(evalDate);
-            dates.Add(calendar.advance(evalDate, 6, TimeUnit.Months, BusinessDayConvention.ModifiedFollowing));
-            dates.Add(calendar.advance(evalDate, 1, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing));
-            dates.Add(calendar.advance(evalDate, 2, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing));
-            dates.Add(calendar.advance(evalDate, 3, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing));
-            dates.Add(calendar.advance(evalDate, 4, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing));
-            dates.Add(calendar.advance(evalDate, 5, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing));
-            dates.Add(calendar.advance(evalDate, 7, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing));
-            dates.Add(calendar.advance(evalDate, 10, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing));
-
-            List<double> defaultProbabilities = new List<double>();
-            defaultProbabilities.Add(0.0000);
-            defaultProbabilities.Add(0.0047);
-            defaultProbabilities.Add(0.0093);
-            defaultProbabilities.Add(0.0286);
-            defaultProbabilities.Add(0.0619);
-            defaultProbabilities.Add(0.0953);
-            defaultProbabilities.Add(0.1508);
-            defaultProbabilities.Add(0.2288);
-            defaultProbabilities.Add(0.3666);
+            Settings.setEvaluationDate(evalDate);           
 
             List<double> hazardRates = new List<double>();
             hazardRates.Add(0.0);
@@ -509,32 +546,34 @@ namespace QuantBook.Models.FixedIncome
             piecewiseFlatHazardRate.linkTo(hazardRateStructure);
 
             var results = new List<(Date evalDate, double timesToMaturity, double hazardRate, double survivalProbability, double defaultProbability)>();
-            if (isDataPoints)
+            switch(resultType)
             {
-                foreach(var d in ((InterpolatedCurve)piecewiseFlatHazardRate.link).dates())
-                {
-                    var years = dayCounter.yearFraction(evalDate, d);
-                    var hazard = 100.0 * hazardRateStructure.hazardRate(d);
-                    var survivalProbability = 100.0 * hazardRateStructure.survivalProbability(d);
-                    var defaultProbability = 100.0 * hazardRateStructure.defaultProbability(d);
-                    results.Add((d, Math.Round(years, 2), hazard, survivalProbability, defaultProbability));
-                }
-            }
-            else
-            {
-                Date dd = evalDate;
-                Date lastDate = dates.Last();
-                while (dd < lastDate)
-                {
-                    var years = dayCounter.yearFraction(evalDate, dd);
-                    var hazard = 100.0 * hazardRateStructure.hazardRate(dd);
-                    var survivalProbability = 100.0 * hazardRateStructure.survivalProbability(dd);
-                    var defaultProbability = 100.0 * hazardRateStructure.defaultProbability(dd);
-                    results.Add((dd, Math.Round(years, 2), hazard, survivalProbability, defaultProbability));
-                    dd = dd + (new Period(1, TimeUnit.Days));
-                }
-            }
-
+                case ResultType.FromInputMaturities:
+                    foreach(var d in ((InterpolatedCurve)piecewiseFlatHazardRate.link).dates())
+                    {
+                        var years = dayCounter.yearFraction(evalDate, d);
+                        var hazard = 100.0 * hazardRateStructure.hazardRate(d);
+                        var survivalProbability = 100.0 * hazardRateStructure.survivalProbability(d);
+                        var defaultProbability = 100.0 * hazardRateStructure.defaultProbability(d);
+                        results.Add((d, Math.Round(years, 2), hazard, survivalProbability, defaultProbability));
+                    }
+                    break;
+                case ResultType.MonthlyResults:
+                    Date dd = evalDate;
+                    Date lastDate = dates.Last();
+                    while (dd < lastDate)
+                    {
+                        var years = dayCounter.yearFraction(evalDate, dd);
+                        var hazard = 100.0 * hazardRateStructure.hazardRate(dd);
+                        var survivalProbability = 100.0 * hazardRateStructure.survivalProbability(dd);
+                        var defaultProbability = 100.0 * hazardRateStructure.defaultProbability(dd);
+                        results.Add((dd, Math.Round(years, 2), hazard, survivalProbability, defaultProbability));
+                        dd = dd + (new Period(1, TimeUnit.Days));
+                    }
+                    break;
+                default:
+                    throw new NotSupportedException($"Unrecognised resultType: {resultType}");
+            }            
             return results;
         }
 
