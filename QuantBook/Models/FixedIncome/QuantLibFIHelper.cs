@@ -210,7 +210,7 @@ namespace QuantBook.Models.FixedIncome
                     throw new NotSupportedException($"Unsupported Result type {resultType}");
             }
             return result;
-        }      
+        }    
 
         public static (double? npv, double? cprice, double? dprice, double? accrued, double? ytm, List<(double zSpread, double npv)> zResults) BondPriceCurveRateZSpread(double faceValue,
                                                                                                                                                                          double coupon)
@@ -282,7 +282,7 @@ namespace QuantBook.Models.FixedIncome
             evalDate = calendar.adjust(evalDate);
             Date settlementDate = calendar.advance(evalDate, new Period(2, TimeUnit.Days));
 
-            var termStructureCurve = new Handle<YieldTermStructure>(IsdaZeroCurve(evalDate, ccy));
+            var discountCurve = new Handle<YieldTermStructure>(IsdaZeroCurve(evalDate, ccy));
 
             // construct proability curve based on hazardRate
             double hazardRateForProbCurve = 1.0E-12;
@@ -293,11 +293,11 @@ namespace QuantBook.Models.FixedIncome
 
             var schedule = new Schedule(effectiveDate, settlementDate, new Period(couponFrequency), calendar, BusinessDayConvention.Following, BusinessDayConvention.Following, DateGeneration.Rule.TwentiethIMM, false);
             var creditDefaultSwap = new CreditDefaultSwap(side, notional, coupon / 10_000, schedule, BusinessDayConvention.ModifiedFollowing, new ActualActual(), false);
-            var engine = new MidPointCdsEngine(defaultProbabilityCurve, recoveryRate, termStructureCurve);
+            var engine = new MidPointCdsEngine(defaultProbabilityCurve, recoveryRate, discountCurve);
             creditDefaultSwap.setPricingEngine(engine);
 
             var npv = creditDefaultSwap.NPV();
-            var hazardRate_ = creditDefaultSwap.impliedHazardRate(npv, termStructureCurve, new ActualActual());
+            var hazardRate_ = creditDefaultSwap.impliedHazardRate(npv, discountCurve, new ActualActual());
             var defaultProbability = defaultProbabilityCurve.link.defaultProbability(evalDate, maturity);
             var survivalProbability = defaultProbabilityCurve.link.survivalProbability(maturity);
             return (npv, hazardRate_, creditDefaultSwap.fairSpread(), defaultProbability, survivalProbability);
@@ -451,6 +451,99 @@ namespace QuantBook.Models.FixedIncome
             return results;
         }
 
+        public static List<(Date evalDate, double timesToMaturity, double hazardRate, double survivalProbability, double defaultProbability)> CdsHazardRate(Date evalDate,
+                                                                                                                                                            double[] spreadsInBasisPoints,
+                                                                                                                                                            string[] tenors,
+                                                                                                                                                            double recoveryRate,
+                                                                                                                                                            ResultType resultType = ResultType.MonthlyResults)
+        {
+            DayCounter dayCounter = new Actual365Fixed();
+            Calendar calendar = new TARGET();
+            evalDate = calendar.adjust(evalDate);
+            Settings.setEvaluationDate(evalDate);
+           
+            double[] spreads = spreadsInBasisPoints.Select(s => s / 10_000.0).ToArray();
+            Date[] termDates = tenors.ToPeriods().Select(tenor => evalDate + tenor).ToArray();
+
+            var ccy = "USD";
+            var discountCurve = new Handle<YieldTermStructure>(IsdaZeroCurve(evalDate, ccy));
+
+            var results = new List<(Date evalDate, double timesToMaturity, double hazardRate, double survivalProbability, double defaultProbability)>();
+            switch (resultType)
+            {
+                case ResultType.FromInputMaturities:
+                    for (int i = 0; i < termDates.Length; i++)                                      
+                    {
+                        var d = termDates[i];
+                        // make CDS and use implied hazard rate                                    
+                        CreditDefaultSwap quotedTrade = new MakeCreditDefaultSwap(d, spreads[i]).withNominal(10000000.0).value();
+
+                        double h = quotedTrade.impliedHazardRate(0.0,
+                                                                 discountCurve,
+                                                                 new Actual365Fixed(),
+                                                                 recoveryRate,
+                                                                 1e-10,
+                                                                 PricingModel.ISDA);
+
+                        RelinkableHandle<DefaultProbabilityTermStructure> defaultProbabilityCurve =
+                         new RelinkableHandle<DefaultProbabilityTermStructure>();
+                        defaultProbabilityCurve.linkTo(new FlatHazardRate(0, new WeekendsOnly(), h, new Actual365Fixed()));
+                        HazardRateStructure hazardRateStructure = (HazardRateStructure) defaultProbabilityCurve.link;
+
+                        var years = dayCounter.yearFraction(evalDate, d);
+                        var hazard = 100.0 * hazardRateStructure.hazardRate(d);
+                        var survivalProbability = 100.0 * hazardRateStructure.survivalProbability(d);
+                        var defaultProbability = 100.0 * hazardRateStructure.defaultProbability(d);
+                        results.Add((d, Math.Round(years, 2), hazard, survivalProbability, defaultProbability));
+                    }
+                    break;
+                case ResultType.MonthlyResults:                    
+                    for(var dd = termDates.First(); dd < termDates.Last(); dd += (new Period(1, TimeUnit.Months)))                    
+                    {
+                        var spread = GetSpread(dd);
+                        CreditDefaultSwap quotedTrade = new MakeCreditDefaultSwap(dd, spread).withNominal(10000000.0).value();
+
+                        double h = quotedTrade.impliedHazardRate(0.0,
+                                                                 discountCurve,
+                                                                 new Actual365Fixed(),
+                                                                 recoveryRate,
+                                                                 1e-10,
+                                                                 PricingModel.ISDA);
+
+                        RelinkableHandle<DefaultProbabilityTermStructure> defaultProbabilityCurve =
+                         new RelinkableHandle<DefaultProbabilityTermStructure>();
+                        defaultProbabilityCurve.linkTo(new FlatHazardRate(0, new WeekendsOnly(), h, new Actual365Fixed()));
+                        HazardRateStructure hazardRateStructure = (HazardRateStructure)defaultProbabilityCurve.link;
+
+                        var years = dayCounter.yearFraction(evalDate, dd);
+                        var hazard = 100.0 * hazardRateStructure.hazardRate(dd);
+                        var survivalProbability = 100.0 * hazardRateStructure.survivalProbability(dd);
+                        var defaultProbability = 100.0 * hazardRateStructure.defaultProbability(dd);
+                        results.Add((dd, Math.Round(years, 2), hazard, survivalProbability, defaultProbability));
+                    }
+                    break;
+                default:
+                    throw new NotSupportedException($"Not supported resultType: {resultType}");
+            }
+            return results;
+
+            double GetSpread(Date theDate)
+            {
+                int? index = null;
+                var theDates = termDates ;
+                for (int i = 0; i < theDates.Length - 1; i++)
+                {
+                    if (theDate >= theDates[i] && theDate <= theDates[i + 1])
+                    {
+                        index = i;
+                        break;
+                    }
+                }
+
+                return spreads[index.Value];
+            }
+        }
+
         public static List<(Date evalDate, double timesToMaturity, double hazardRate, double survivalProbability, double defaultProbability)> CdsHazardRate(
             Date evalDate,
             Date effectiveDate,
@@ -480,36 +573,7 @@ namespace QuantBook.Models.FixedIncome
                 calendar.advance(evalDate, 10, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing)
             };
 
-            var results = new List<(Date evalDate, double timesToMaturity, double hazardRate, double survivalProbability, double defaultProbability)>();           
-            switch (resultType)
-            {
-                case ResultType.FromInputMaturities:
-                    foreach (var d in dates)
-                    {
-                        var years = dayCounter.yearFraction(evalDate, d);
-                        var hazard = 100.0 * defaultProbabilityCurve.link.hazardRate(d);
-                        var survivalProbability = 100.0 * defaultProbabilityCurve.link.survivalProbability(d);
-                        var defaultProbability = 100.0 * defaultProbabilityCurve.link.defaultProbability(d);
-                        results.Add((d, Math.Round(years, 2), hazard, survivalProbability, defaultProbability));
-                    }
-                    break;
-                case ResultType.MonthlyResults:
-                    Date dd = evalDate;
-                    Date lastDate = dates.Last();
-                    while (dd < lastDate)
-                    {
-                        var years = dayCounter.yearFraction(evalDate, dd);
-                        var hazard = 100.0 * defaultProbabilityCurve.link.hazardRate(dd);
-                        var survivalProbability = 100.0 * defaultProbabilityCurve.link.survivalProbability(dd);
-                        var defaultProbability = 100.0 * defaultProbabilityCurve.link.defaultProbability(dd);
-                        results.Add((dd, Math.Round(years, 2), hazard, survivalProbability, defaultProbability));
-                        dd = dd + (new Period(1, TimeUnit.Days));
-                    }
-                    break;
-                default:
-                    throw new NotSupportedException($"Unrecognised resultType: {resultType}");
-            }
-            return results;
+            return ToHazardRateResults(evalDate, dates, resultType, dayCounter, (HazardRateStructure) defaultProbabilityCurve.link);
         }
 
         /// <summary>
@@ -527,7 +591,7 @@ namespace QuantBook.Models.FixedIncome
             DayCounter dayCounter = new Actual365Fixed();
             Calendar calendar = new TARGET();
             evalDate = calendar.adjust(evalDate);
-            Settings.setEvaluationDate(evalDate);           
+            Settings.setEvaluationDate(evalDate);
 
             List<double> hazardRates = new List<double>();
             hazardRates.Add(0.0);
@@ -541,15 +605,24 @@ namespace QuantBook.Models.FixedIncome
             }
 
             // bootstrap hazard rates            
-            var hazardRateStructure = new InterpolatedHazardRateCurve<BackwardFlat>(dates, hazardRates, new Thirty360());
-            RelinkableHandle<DefaultProbabilityTermStructure> piecewiseFlatHazardRate = new RelinkableHandle<DefaultProbabilityTermStructure>();
+            var hazardRateStructure = new InterpolatedHazardRateCurve<BackwardFlat>(dates, hazardRates, dayCounter);
+            RelinkableHandle <DefaultProbabilityTermStructure> piecewiseFlatHazardRate = new RelinkableHandle<DefaultProbabilityTermStructure>();
             piecewiseFlatHazardRate.linkTo(hazardRateStructure);
 
+            return ToHazardRateResults(evalDate, dates, resultType, dayCounter, hazardRateStructure);
+        }
+
+        private static List<(Date evalDate, double timesToMaturity, double hazardRate, double survivalProbability, double defaultProbability)> ToHazardRateResults(Date evalDate,
+                                                                                                                                                                   List<Date> dates,
+                                                                                                                                                                   ResultType resultType,
+                                                                                                                                                                   DayCounter dayCounter,
+                                                                                                                                                                   HazardRateStructure hazardRateStructure)
+        {
             var results = new List<(Date evalDate, double timesToMaturity, double hazardRate, double survivalProbability, double defaultProbability)>();
-            switch(resultType)
+            switch (resultType)
             {
                 case ResultType.FromInputMaturities:
-                    foreach(var d in ((InterpolatedCurve)piecewiseFlatHazardRate.link).dates())
+                    foreach (var d in dates)
                     {
                         var years = dayCounter.yearFraction(evalDate, d);
                         var hazard = 100.0 * hazardRateStructure.hazardRate(d);
@@ -573,7 +646,7 @@ namespace QuantBook.Models.FixedIncome
                     break;
                 default:
                     throw new NotSupportedException($"Unrecognised resultType: {resultType}");
-            }            
+            }
             return results;
         }
 
@@ -604,7 +677,7 @@ namespace QuantBook.Models.FixedIncome
                 }
             }           
 
-            return new PiecewiseYieldCurve<Discount, LogCubic>(rateDate, instruments, new Actual365Fixed());
+            return new PiecewiseYieldCurve<Discount, LogLinear>(evalDate, instruments, new Actual365Fixed());
 
             bool IsDepositRate(IsdaRate r) => string.IsNullOrEmpty(r.FixedDayCountConvention);
 

@@ -205,7 +205,73 @@ namespace QuantBook.Ch10
 
         public void HazardRate()
         {
-            throw new NotImplementedException("Can't get the quant lib to work for this one");
+            DataTable dt1 = new DataTable();
+            DataTable dt2 = new DataTable();
+            FillHeader(dt1);
+            FillHeader(dt2);
+
+            double[] spreads = new[] { 34.93, 53.60, 72.02, 106.39, 129.39, 139.46 }; 
+            string[] tenors = new[] { "1Y", "2Y", "3Y", "5Y", "7Y", "10Y" };
+
+            FillTable(dt1, QuantLibFIHelper.CdsHazardRate(EvalDate, spreads, tenors, 0.4, ResultType.FromInputMaturities));
+            FillTable(dt2, QuantLibFIHelper.CdsHazardRate(EvalDate, spreads, tenors, 0.4, ResultType.MonthlyResults));
+
+            Table1 = dt1;
+            Table2 = dt2;
+            AddCharts();
+
+            void FillHeader(DataTable dt)
+            {
+                dt.Columns.AddRange(new[]
+                {
+                    new DataColumn("Maturity", typeof(string)),
+                    new DataColumn("TimesToMaturity", typeof(string)),
+                    new DataColumn("Hazard Rate (%)", typeof(string)),
+                    new DataColumn("Survival Probability (%)", typeof(string)),
+                    new DataColumn("Default Probability (%)", typeof(string)),                    
+                });              
+            }
+
+            void FillTable(DataTable dt, List<(Date evalDate, double timesToMaturity, double hazardRate, double survivalProbability, double defaultProbability)> rows)
+            {
+                foreach(var row in rows)
+                {
+                    dt.Rows.Add(row.evalDate, row.timesToMaturity, row.hazardRate, row.survivalProbability, row.defaultProbability);
+                }
+            }
+        }
+
+        private void AddCharts()
+        {
+            Title1 = "Hazard Rate";
+            XLabel1 = "Maturity (Years)";
+            YLabel1 = "Hazard Rate (%)";
+            Title2 = "Survival Probability";
+            XLabel2 = "Maturity (Years)"; 
+            YLabel2 = "Survival Probability (%)";            
+            LineSeriesCollection1.Clear();
+            LineSeriesCollection1.Add(new Series
+            {
+                ChartType = SeriesChartType.Line,
+                XValueMember = "TimesToMaturity",
+                YValueMembers = "Hazard Rate (%)"
+            });
+            LineSeriesCollection2.Clear();
+            LineSeriesCollection2.Add(new Series
+            {
+                ChartType = SeriesChartType.Line,
+                XValueMember = "TimesToMaturity",
+                YValueMembers = "Survival Probability (%)",
+                Name= "Survival Probability (%)"
+
+            });
+            LineSeriesCollection2.Add(new Series
+            {
+                ChartType = SeriesChartType.Line,
+                XValueMember = "TimesToMaturity",
+                YValueMembers = "Default Probability (%)",
+                Name = "Default Probability (%)",
+            });
         }
 
         public void StartCdsPV()

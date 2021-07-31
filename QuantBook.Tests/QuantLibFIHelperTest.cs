@@ -236,36 +236,39 @@ namespace QuantBook.Tests
         
 
         [Test]
-        [Ignore("Not implemented")]
-        public void WhenCalculatingCdsHazardRatesUsingCreditSpreadCurveAsInput()
+        [TestCase(ResultType.FromInputMaturities)]
+        [TestCase(ResultType.MonthlyResults)]
+        public void WhenCalculatingCdsHazardRatesUsingCreditSpreadCurveAsInput(ResultType resultType)
         {
-            double[] spreads = new[] { 34.93, 53.60, 72.02, 106.39, 129.39, 139.46 };
-            string[] tenors = new[] { "1Y", "2Y", "3Y", "5Y", "7Y", "10Y" };
             var evalDate = new Date(20, 3, 2015);
+
+            double[] spreads = new[] { 34.93, 53.60, 72.02, 106.39, 129.39, 139.46 }; // in basis points (need to divide 10_000)
+            string[] tenors = new[] { "1Y", "2Y", "3Y", "5Y", "7Y", "10Y" };                  
+
             var recoveryRate = 0.4;
 
-            Assert.Fail("Not Implemented");
+            var hazardRates = QuantLibFIHelper.CdsHazardRate(evalDate, spreads, tenors, recoveryRate, resultType);
+            AssertHazardRateResults(evalDate, $"using spreads {string.Join(",", spreads)}", hazardRates);            
         }
 
         [Test]
-        public void WhenCalculatingCdsHazardRatesUsingFlatHazardRateAsInput()
+        [TestCase(ResultType.FromInputMaturities)]
+        [TestCase(ResultType.MonthlyResults)]
+        public void WhenCalculatingCdsHazardRatesUsingFlatHazardRateAsInput(ResultType resultType)
         {
             var evalDate = new Date(20, 3, 2015);
             var effectiveDate = evalDate + new Period(10, TimeUnit.Years);
             double hazardRate = 1.0E-12;  // in basis points
 
-            var hazardRateMonthlyResults = QuantLibFIHelper.CdsHazardRate(evalDate, effectiveDate, hazardRate, ResultType.MonthlyResults);
+            var hazardRateResults = QuantLibFIHelper.CdsHazardRate(evalDate, effectiveDate, hazardRate, resultType);
             var comment = string.Format($"hazard rate {evalDate} using flat hazard rate {hazardRate}");
-            Console.WriteLine("Monthly Results:");
-            AssertHazardRateResults(evalDate, comment, hazardRateMonthlyResults);
-            Console.WriteLine("From Input maturities:");
-            var hazardRateInputMaturities = QuantLibFIHelper.CdsHazardRate(evalDate, effectiveDate, hazardRate, ResultType.FromInputMaturities);
-            AssertHazardRateResults(evalDate, comment, hazardRateInputMaturities);
-
+            AssertHazardRateResults(evalDate, comment, hazardRateResults);            
         }
 
         [Test]
-        public void WhenCalculatingCdsHazardRatesUsingDefaultProbabilitesCurveAsInput()
+        [TestCase(ResultType.FromInputMaturities)]
+        [TestCase(ResultType.MonthlyResults)]
+        public void WhenCalculatingCdsHazardRatesUsingDefaultProbabilitesCurveAsInput(ResultType resultType)
         {            
             var evalDate = new Date(20, 3, 2015);
             
@@ -296,20 +299,15 @@ namespace QuantBook.Tests
                 0.3666
             };
 
-            Console.WriteLine("CdsHazard rate: ");
-            var hazardRateMonthlyResults = QuantLibFIHelper.CdsHazardRate(evalDate, dates, defaultProbabilities, ResultType.MonthlyResults);
-            AssertHazardRateResults(evalDate, $"{evalDate} using default probabilities", hazardRateMonthlyResults);
-
-            Console.WriteLine("CdsHazard rate data points: ");
-            var hazardRateFromInputMaturities = QuantLibFIHelper.CdsHazardRate(evalDate, dates, defaultProbabilities, ResultType.FromInputMaturities);
-            AssertHazardRateResults(evalDate, $"{evalDate} using default probabilities", hazardRateFromInputMaturities);          
+            var hazardRateResults = QuantLibFIHelper.CdsHazardRate(evalDate, dates, defaultProbabilities, resultType);
+            AssertHazardRateResults(evalDate, $"{evalDate} using default probabilities", hazardRateResults);            
         }
 
         public static void AssertHazardRateResults(Date evalDate, string comment, List<(Date evalDate, double timesToMaturity, double hazardRate, double survivalProbability, double defaultProbability)> hazardRateResults)
         {
             foreach (var result in hazardRateResults)
             {
-                Console.WriteLine($"CdsHazardRate with {comment}, results to hazardRate: {result.hazardRate}, maturity: {result.timesToMaturity}, surival: {result.survivalProbability}% default: {result.defaultProbability}%");
+                Console.WriteLine($"CdsHazardRate with {comment}, results to maturity: {result.timesToMaturity}, hazardRate: {result.hazardRate}%, surival: {result.survivalProbability}% default: {result.defaultProbability}%");
                 if (result.evalDate == evalDate)
                 {
                     Assert.That(result.defaultProbability, Is.EqualTo(0));
