@@ -463,85 +463,32 @@ namespace QuantBook.Models.FixedIncome
             Settings.setEvaluationDate(evalDate);
            
             double[] spreads = spreadsInBasisPoints.Select(s => s / 10_000.0).ToArray();
-            Date[] termDates = tenors.ToPeriods().Select(tenor => evalDate + tenor).ToArray();
-
+            Date[] termDates = new List<Date>{evalDate}.Concat(tenors.ToPeriods().Select(tenor => evalDate + tenor)).ToArray();
+            var hazardRates = new List<double> { 0.0 }; //place holder for first item         
             var ccy = "USD";
             var discountCurve = new Handle<YieldTermStructure>(IsdaZeroCurve(evalDate, ccy));
 
-            var results = new List<(Date evalDate, double timesToMaturity, double hazardRate, double survivalProbability, double defaultProbability)>();
-            switch (resultType)
+            for (int i = 1; i < termDates.Length; i++)
             {
-                case ResultType.FromInputMaturities:
-                    for (int i = 0; i < termDates.Length; i++)                                      
-                    {
-                        var d = termDates[i];
-                        // make CDS and use implied hazard rate                                    
-                        CreditDefaultSwap quotedTrade = new MakeCreditDefaultSwap(d, spreads[i]).withNominal(10000000.0).value();
+                var d = termDates[i];
+                // make CDS and use implied hazard rate                                    
+                CreditDefaultSwap quotedTrade = new MakeCreditDefaultSwap(d, spreads[i - 1]).withNominal(10_000_000.0).value();
 
-                        double h = quotedTrade.impliedHazardRate(0.0,
-                                                                 discountCurve,
-                                                                 new Actual365Fixed(),
-                                                                 recoveryRate,
-                                                                 1e-10,
-                                                                 PricingModel.ISDA);
-
-                        RelinkableHandle<DefaultProbabilityTermStructure> defaultProbabilityCurve =
-                         new RelinkableHandle<DefaultProbabilityTermStructure>();
-                        defaultProbabilityCurve.linkTo(new FlatHazardRate(0, new WeekendsOnly(), h, new Actual365Fixed()));
-                        HazardRateStructure hazardRateStructure = (HazardRateStructure) defaultProbabilityCurve.link;
-
-                        var years = dayCounter.yearFraction(evalDate, d);
-                        var hazard = 100.0 * hazardRateStructure.hazardRate(d);
-                        var survivalProbability = 100.0 * hazardRateStructure.survivalProbability(d);
-                        var defaultProbability = 100.0 * hazardRateStructure.defaultProbability(d);
-                        results.Add((d, Math.Round(years, 2), hazard, survivalProbability, defaultProbability));
-                    }
-                    break;
-                case ResultType.MonthlyResults:                    
-                    for(var dd = termDates.First(); dd < termDates.Last(); dd += (new Period(1, TimeUnit.Months)))                    
-                    {
-                        var spread = GetSpread(dd);
-                        CreditDefaultSwap quotedTrade = new MakeCreditDefaultSwap(dd, spread).withNominal(10000000.0).value();
-
-                        double h = quotedTrade.impliedHazardRate(0.0,
-                                                                 discountCurve,
-                                                                 new Actual365Fixed(),
-                                                                 recoveryRate,
-                                                                 1e-10,
-                                                                 PricingModel.ISDA);
-
-                        RelinkableHandle<DefaultProbabilityTermStructure> defaultProbabilityCurve =
-                         new RelinkableHandle<DefaultProbabilityTermStructure>();
-                        defaultProbabilityCurve.linkTo(new FlatHazardRate(0, new WeekendsOnly(), h, new Actual365Fixed()));
-                        HazardRateStructure hazardRateStructure = (HazardRateStructure)defaultProbabilityCurve.link;
-
-                        var years = dayCounter.yearFraction(evalDate, dd);
-                        var hazard = 100.0 * hazardRateStructure.hazardRate(dd);
-                        var survivalProbability = 100.0 * hazardRateStructure.survivalProbability(dd);
-                        var defaultProbability = 100.0 * hazardRateStructure.defaultProbability(dd);
-                        results.Add((dd, Math.Round(years, 2), hazard, survivalProbability, defaultProbability));
-                    }
-                    break;
-                default:
-                    throw new NotSupportedException($"Not supported resultType: {resultType}");
+                double h = quotedTrade.impliedHazardRate(0.0,
+                                                         discountCurve,
+                                                         new Actual365Fixed(),
+                                                         recoveryRate,
+                                                         1e-10,
+                                                         PricingModel.ISDA);
+                hazardRates.Add(h);
             }
-            return results;
+            hazardRates[0] = hazardRates[1];
 
-            double GetSpread(Date theDate)
-            {
-                int? index = null;
-                var theDates = termDates ;
-                for (int i = 0; i < theDates.Length - 1; i++)
-                {
-                    if (theDate >= theDates[i] && theDate <= theDates[i + 1])
-                    {
-                        index = i;
-                        break;
-                    }
-                }
+            RelinkableHandle<DefaultProbabilityTermStructure> defaultProbabilityCurve =
+                         new RelinkableHandle<DefaultProbabilityTermStructure>();
+            defaultProbabilityCurve.linkTo(new InterpolatedHazardRateCurve<ForwardFlat>(new List<Date>(termDates), hazardRates, new Actual365Fixed()));
 
-                return spreads[index.Value];
-            }
+            return ToHazardRateResults(evalDate, new List<Date>(termDates), resultType, dayCounter, (HazardRateStructure)defaultProbabilityCurve.link);
         }
 
         public static List<(Date evalDate, double timesToMaturity, double hazardRate, double survivalProbability, double defaultProbability)> CdsHazardRate(
@@ -641,7 +588,7 @@ namespace QuantBook.Models.FixedIncome
                         var survivalProbability = 100.0 * hazardRateStructure.survivalProbability(dd);
                         var defaultProbability = 100.0 * hazardRateStructure.defaultProbability(dd);
                         results.Add((dd, Math.Round(years, 2), hazard, survivalProbability, defaultProbability));
-                        dd = dd + (new Period(1, TimeUnit.Days));
+                        dd = dd + (new Period(1, TimeUnit.Months));
                     }
                     break;
                 default:

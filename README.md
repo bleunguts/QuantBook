@@ -12,7 +12,8 @@ Skipped these sections below:
 		Binomial Tian, Binomial Leisen Remier, Binomial Joshi, FiniteDifference, Integral, PseudoMonto Carlo, Quasi MonteCarlo
 * Pricing Fixed Income 	
 	* CDS Pricing Engine largely done
-		* used a single hazard rate to price CDS contract, skipped the method of bootstrap a hazard rate with spreads
+		* Use InterpolatedHazardRate curve by constructing a list of hazard rates by building CDS and getting the impliedHazardRate
+		* last todo CDS Pricing on UI to use spread based hazard term structure instead of fixed hazard rate
     * Callable Bonds
 	* Convertible Bonds			
 * Pricing Exotic Options using QuantLib (I already wrote the coded version, this about using the lib) pg 431
