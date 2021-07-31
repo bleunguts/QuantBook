@@ -272,8 +272,8 @@ namespace QuantBook.Models.FixedIncome
                                                                                                                                        Date effectiveDate,
                                                                                                                                        Date maturity,
                                                                                                                                        double recoveryRate,
-                                                                                                                                       string spreads,
-                                                                                                                                       string tenors,                                                                                                                                       
+                                                                                                                                       string[] spreadsInBasisPoints,
+                                                                                                                                       string[] tenors,                                                                                                                                       
                                                                                                                                        double notional,
                                                                                                                                        Frequency couponFrequency,
                                                                                                                                        double coupon)
@@ -284,12 +284,32 @@ namespace QuantBook.Models.FixedIncome
 
             var discountCurve = new Handle<YieldTermStructure>(IsdaZeroCurve(evalDate, ccy));
 
-            // construct proability curve based on hazardRate
-            double hazardRateForProbCurve = 1.0E-12;
-            Handle<Quote> hazardRate = new Handle<Quote>(new SimpleQuote(hazardRateForProbCurve));
+            // construct proability curve based on spreads
+            double[] spreads = spreadsInBasisPoints.Select(s => Convert.ToDouble(s) / 10_000.0).ToArray();
+            Date[] termDates = new List<Date> { evalDate }.Concat(tenors.ToPeriods().Select(tenor => evalDate + tenor)).ToArray();
+            var hazardRates = new List<double> { 0.0 }; //place holder for first item                     
+            for (int i = 1; i < termDates.Length; i++)
+            {
+                var d = termDates[i];
+                // make CDS and use implied hazard rate                                    
+                CreditDefaultSwap quotedTrade = new MakeCreditDefaultSwap(d, spreads[i - 1])
+                                                        .withNominal(10_000_000.0)
+                                                        .value();
+
+                double h = quotedTrade.impliedHazardRate(0.0,
+                                                         discountCurve,
+                                                         new Actual365Fixed(),
+                                                         recoveryRate,
+                                                         1e-10,
+                                                         PricingModel.ISDA);
+                hazardRates.Add(h);
+            }
+            hazardRates[0] = hazardRates[1];
+
             RelinkableHandle<DefaultProbabilityTermStructure> defaultProbabilityCurve =
-               new RelinkableHandle<DefaultProbabilityTermStructure>();
-            defaultProbabilityCurve.linkTo(new FlatHazardRate(0, calendar, hazardRate, new Actual360()));            
+                         new RelinkableHandle<DefaultProbabilityTermStructure>();
+            defaultProbabilityCurve.linkTo(new InterpolatedHazardRateCurve<ForwardFlat>(new List<Date>(termDates), hazardRates, new Actual365Fixed()));
+            defaultProbabilityCurve.link.enableExtrapolation(true);
 
             var schedule = new Schedule(effectiveDate, settlementDate, new Period(couponFrequency), calendar, BusinessDayConvention.Following, BusinessDayConvention.Following, DateGeneration.Rule.TwentiethIMM, false);
             var creditDefaultSwap = new CreditDefaultSwap(side, notional, coupon / 10_000, schedule, BusinessDayConvention.ModifiedFollowing, new ActualActual(), false);
@@ -297,10 +317,11 @@ namespace QuantBook.Models.FixedIncome
             creditDefaultSwap.setPricingEngine(engine);
 
             var npv = creditDefaultSwap.NPV();
-            var hazardRate_ = creditDefaultSwap.impliedHazardRate(npv, discountCurve, new ActualActual());
-            var defaultProbability = defaultProbabilityCurve.link.defaultProbability(evalDate, maturity);
-            var survivalProbability = defaultProbabilityCurve.link.survivalProbability(maturity);
-            return (npv, hazardRate_, creditDefaultSwap.fairSpread(), defaultProbability, survivalProbability);
+            var hazardRate_ = 100.0 * creditDefaultSwap.impliedHazardRate(npv, discountCurve, new ActualActual());
+            var defaultProbability = 100.0 * defaultProbabilityCurve.link.defaultProbability(evalDate, maturity);
+            var survivalProbability = 100.0 * defaultProbabilityCurve.link.survivalProbability(maturity);
+            double fairSpread = 10_000 * creditDefaultSwap.fairSpread();
+            return (npv, hazardRate_, fairSpread, defaultProbability, survivalProbability);
         }
 
         public static (double accrual, double upfront, double cleanPrice, double dirtyPrice, double dv01) CdsPrice(Protection.Side side,
@@ -309,8 +330,8 @@ namespace QuantBook.Models.FixedIncome
                                                                                                                    Date effectiveDate,
                                                                                                                    Date maturity,
                                                                                                                    double recoveryRate,
-                                                                                                                   string spreads,
-                                                                                                                   string tenors,
+                                                                                                                   string[] spreads,
+                                                                                                                   string[] tenors,
                                                                                                                    Frequency couponFrequency,
                                                                                                                    double coupon)
         {
@@ -461,18 +482,20 @@ namespace QuantBook.Models.FixedIncome
             Calendar calendar = new TARGET();
             evalDate = calendar.adjust(evalDate);
             Settings.setEvaluationDate(evalDate);
-           
-            double[] spreads = spreadsInBasisPoints.Select(s => s / 10_000.0).ToArray();
-            Date[] termDates = new List<Date>{evalDate}.Concat(tenors.ToPeriods().Select(tenor => evalDate + tenor)).ToArray();
-            var hazardRates = new List<double> { 0.0 }; //place holder for first item         
+
             var ccy = "USD";
             var discountCurve = new Handle<YieldTermStructure>(IsdaZeroCurve(evalDate, ccy));
 
+            double[] spreads = spreadsInBasisPoints.Select(s => s / 10_000.0).ToArray();
+            Date[] termDates = new List<Date>{evalDate}.Concat(tenors.ToPeriods().Select(tenor => evalDate + tenor)).ToArray();
+            var hazardRates = new List<double> { 0.0 }; //place holder for first item                     
             for (int i = 1; i < termDates.Length; i++)
             {
                 var d = termDates[i];
                 // make CDS and use implied hazard rate                                    
-                CreditDefaultSwap quotedTrade = new MakeCreditDefaultSwap(d, spreads[i - 1]).withNominal(10_000_000.0).value();
+                CreditDefaultSwap quotedTrade = new MakeCreditDefaultSwap(d, spreads[i - 1])
+                                                        .withNominal(10_000_000.0)
+                                                        .value();
 
                 double h = quotedTrade.impliedHazardRate(0.0,
                                                          discountCurve,

@@ -285,7 +285,7 @@ namespace QuantBook.Ch10
                 new DataColumn("Name", typeof(string)),
                 new DataColumn("Value", typeof(string)),                
             });
-            var result = QuantLibFIHelper.CdsPv(protectionSide.ToSide(), "USD", EvalDate, EffectiveDate, Maturity, RecoveryRate, Spreads, Tenors, Notional, Frequency.Quarterly, CdsCoupon);
+            var result = QuantLibFIHelper.CdsPv(protectionSide.ToSide(), "USD", EvalDate, EffectiveDate, Maturity, RecoveryRate, Spreads.Split(','), Tenors.Split(','), Notional, Frequency.Quarterly, CdsCoupon); ;
 
             dt.Rows.Add("Maturity", Maturity);
             dt.Rows.Add("Coupoon", CdsCoupon);
@@ -304,7 +304,7 @@ namespace QuantBook.Ch10
             LineSeriesCollection1.Clear();
             LineSeriesCollection2.Clear();
 
-            var cds = QuantLibFIHelper.CdsPrice(ProtectionSide.ToSide(), "USD", EvalDate, EffectiveDate, Maturity, RecoveryRate, Spreads, Tenors, Frequency.Quarterly, CdsCoupon);
+            var cds = QuantLibFIHelper.CdsPrice(ProtectionSide.ToSide(), "USD", EvalDate, EffectiveDate, Maturity, RecoveryRate, Spreads.Split(','), Tenors.Split(','), Frequency.Quarterly, CdsCoupon);
             DataTable dt = new DataTable();
             dt.Columns.AddRange(new[]
             {

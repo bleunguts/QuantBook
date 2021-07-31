@@ -343,11 +343,11 @@ namespace QuantBook.Tests
             var maturity = new Date(20, 6, 2014);
             var ccy = "USD";
             var recoveryRate = 0.4;
-            var tenors = "5Y";
+            var tenors = new string[] { "5Y" };
             var spreads = "210";
             var notional = 10_000;
             var coupon = 100;       
-            var cds = QuantLibFIHelper.CdsPv(Protection.Side.Buyer, ccy, evalDate, effectiveDate, maturity, recoveryRate, spreads, tenors, notional, Frequency.Quarterly, coupon);
+            var cds = QuantLibFIHelper.CdsPv(Protection.Side.Buyer, ccy, evalDate, effectiveDate, maturity, recoveryRate, spreads.Split(','), tenors, notional, Frequency.Quarterly, coupon);
 
             Assert.That(cds.npv, Is.GreaterThan(0).Or.LessThan(0)) ;
             Assert.That(cds.fairSpread, Is.GreaterThan(0));
