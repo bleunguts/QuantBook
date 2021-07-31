@@ -273,8 +273,7 @@ namespace QuantBook.Models.FixedIncome
                                                                                                                                        Date maturity,
                                                                                                                                        double recoveryRate,
                                                                                                                                        string spreads,
-                                                                                                                                       string tenors,
-                                                                                                                                       double hazardRateForProbCurve = 1.0E-12,
+                                                                                                                                       string tenors,                                                                                                                                       
                                                                                                                                        double notional,
                                                                                                                                        Frequency couponFrequency,
                                                                                                                                        double coupon)
@@ -286,20 +285,21 @@ namespace QuantBook.Models.FixedIncome
             var termStructureCurve = new Handle<YieldTermStructure>(IsdaZeroCurve(evalDate, ccy));
 
             // construct proability curve based on hazardRate
-            Handle<Quote> hazardRate = new Handle<Quote>(new SimpleQuote(1.0E-12));
-            RelinkableHandle<DefaultProbabilityTermStructure> probabilityCurve =
+            double hazardRateForProbCurve = 1.0E-12;
+            Handle<Quote> hazardRate = new Handle<Quote>(new SimpleQuote(hazardRateForProbCurve));
+            RelinkableHandle<DefaultProbabilityTermStructure> defaultProbabilityCurve =
                new RelinkableHandle<DefaultProbabilityTermStructure>();
-            probabilityCurve.linkTo(new FlatHazardRate(0, calendar, hazardRate, new Actual360()));            
+            defaultProbabilityCurve.linkTo(new FlatHazardRate(0, calendar, hazardRate, new Actual360()));            
 
             var schedule = new Schedule(effectiveDate, settlementDate, new Period(couponFrequency), calendar, BusinessDayConvention.Following, BusinessDayConvention.Following, DateGeneration.Rule.TwentiethIMM, false);
             var creditDefaultSwap = new CreditDefaultSwap(side, notional, coupon / 10_000, schedule, BusinessDayConvention.ModifiedFollowing, new ActualActual(), false);
-            var engine = new MidPointCdsEngine(probabilityCurve, recoveryRate, termStructureCurve);
+            var engine = new MidPointCdsEngine(defaultProbabilityCurve, recoveryRate, termStructureCurve);
             creditDefaultSwap.setPricingEngine(engine);
 
             var npv = creditDefaultSwap.NPV();
             var hazardRate_ = creditDefaultSwap.impliedHazardRate(npv, termStructureCurve, new ActualActual());
-            var defaultProbability = probabilityCurve.link.defaultProbability(evalDate, maturity);
-            var survivalProbability = probabilityCurve.link.survivalProbability(maturity);
+            var defaultProbability = defaultProbabilityCurve.link.defaultProbability(evalDate, maturity);
+            var survivalProbability = defaultProbabilityCurve.link.survivalProbability(maturity);
             return (npv, hazardRate_, creditDefaultSwap.fairSpread(), defaultProbability, survivalProbability);
         }
 
@@ -451,6 +451,19 @@ namespace QuantBook.Models.FixedIncome
             return results;
         }
 
+        struct CreditSpreadCurve
+        {
+            double[] spreads;
+            string[] tenors;
+        }
+
+        /// <summary>
+        /// There are several different types of inputs that can be used to value the CDS Hazard Rate
+        /// * Credit Spread curve -> create a CDS from these spreads and get the implied hazard rate
+        /// * Default Probabilities curve -> provide set of time/prob data points to build set of hazard rates
+        /// * use FlatHazardRate -> a single hazard rate for entire lifetime of CDS
+        /// </summary>      
+
         public static List<(Date evalDate, double timesToMaturity, double hazardRate, double survivalProbability, double defaultProbability)> CdsHazardRate(Date evalDate,
                                                                                                                                                             double recoveryRate,
                                                                                                                                                             double[] spreads,
@@ -463,7 +476,17 @@ namespace QuantBook.Models.FixedIncome
             evalDate = calendar.adjust(evalDate);
             Settings.setEvaluationDate(evalDate);
 
-            /*
+            List<Date> dates = new List<Date>();
+            dates.Add(evalDate);
+            dates.Add(calendar.advance(evalDate, 6, TimeUnit.Months, BusinessDayConvention.ModifiedFollowing));
+            dates.Add(calendar.advance(evalDate, 1, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing));
+            dates.Add(calendar.advance(evalDate, 2, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing));
+            dates.Add(calendar.advance(evalDate, 3, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing));
+            dates.Add(calendar.advance(evalDate, 4, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing));
+            dates.Add(calendar.advance(evalDate, 5, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing));
+            dates.Add(calendar.advance(evalDate, 7, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing));
+            dates.Add(calendar.advance(evalDate, 10, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing));
+
             List<double> defaultProbabilities = new List<double>();
             defaultProbabilities.Add(0.0000);
             defaultProbabilities.Add(0.0047);
@@ -488,8 +511,8 @@ namespace QuantBook.Models.FixedIncome
 
             // bootstrap hazard rates            
             RelinkableHandle<DefaultProbabilityTermStructure> piecewiseFlatHazardRate = new RelinkableHandle<DefaultProbabilityTermStructure>();
-            piecewiseFlatHazardRate.linkTo(new InterpolatedHazardRateCurve<BackwardFlat>(dates, hazardRates, new Thirty360()));
-            */
+            piecewiseFlatHazardRate.linkTo(new InterpolatedHazardRateCurve<BackwardFlat>(dates, hazardRates, new Thirty360()));            
+
             throw new NotImplementedException("Quant Library does not contain a piecewiseFlatHazardRate that is generated by set of spreads");
         }
 
