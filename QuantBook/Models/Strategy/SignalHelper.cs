@@ -4,6 +4,7 @@ using QuantBook.Models.DataModel.Quandl;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace QuantBook.Models.Strategy
@@ -48,17 +49,72 @@ namespace QuantBook.Models.Strategy
             throw new NotImplementedException();
         }
 
-        private static IEnumerable<SignalEntity> LinearRegression(IEnumerable<SignalEntity> input, int movingWindow)
+        private static IEnumerable<SignalEntity> LinearRegression(IEnumerable<SignalEntity> raw, int movingWindow)
         {
-            throw new NotImplementedException();
+            var rawSignals = new List<SignalEntity>(raw);
+            var computedSignals = new List<SignalEntity>();
+
+            for (int i = movingWindow - 1; i < rawSignals.Count; i++)
+            {
+                var xa = new List<double>();
+                var ya = new List<double>();
+                var tmp = new List<SignalEntity>();
+                for (int j = i - movingWindow + 1; j <= i; j++)
+                {
+                    xa.Add(1.0 * j);
+                    ya.Add(rawSignals[j].Price);
+                    tmp.Add(rawSignals[j]);
+                }
+                var lr = AnalysisModel.LinearAnalysisHelper.GetSimpleRegression(xa, ya);
+                double price = rawSignals[i].Price;
+                double priceLR = lr.Alpha + lr.Beta * xa[xa.Count - 1];
+                double std = tmp.StdDev(x => x.Price);
+                double zscore = (price - priceLR) / std;
+                computedSignals.Add(new SignalEntity
+                {
+                    Ticker = rawSignals[i].Ticker,
+                    Date = rawSignals[i].Date,
+                    Price = rawSignals[i].Price,
+                    PricePredicted = priceLR,
+                    UpperBand = priceLR + 2.0 * std,
+                    LowerBand = priceLR - 2.0 * std,
+                    Signal = zscore
+                });
+            }
+            return computedSignals;
         }
 
-        private static IEnumerable<SignalEntity> MovingAverage(IEnumerable<SignalEntity> input, int movingWindow)
+        private static IEnumerable<SignalEntity> MovingAverage(IEnumerable<SignalEntity> raw, int movingWindow)
         {
-            throw new NotImplementedException();
+            var rawSignals = new List<SignalEntity>(raw);
+            var computedSignals = new List<SignalEntity>();
+
+            for (int i = movingWindow - 1; i < rawSignals.Count; i++)
+            {
+                var temp = new List<SignalEntity>();
+                for (int j = i - movingWindow + 1; j <= i; j++)
+                {
+                    temp.Add(rawSignals[j]);
+                }
+                double avg = temp.Average(x => x.Price);
+                double std = temp.StdDev(x => x.Price);
+                double price = rawSignals[i].Price;
+                double zscore = (price - avg) / std;
+                computedSignals.Add(new SignalEntity
+                {
+                    Ticker = rawSignals[i].Ticker,
+                    Date = rawSignals[i].Date,
+                    Price = rawSignals[i].Price,
+                    PricePredicted = avg,
+                    UpperBand = avg + 2.0 * std,
+                    LowerBand = avg - 2.0 * std,
+                    Signal = zscore
+                });
+            }
+            return computedSignals;
         }
 
-        public static async Task<IEnumerable<SignalEntity>> GetStockDataAsync(string ticker, DateTime startDate, DateTime endDate, PriceTypeEnum priceType)
+        public static async Task<IEnumerable<SignalEntity>> GetStockData(string ticker, DateTime startDate, DateTime endDate, PriceTypeEnum priceType)
         {       
             var data = await MarketData.GetStockData(ticker, startDate, endDate);
             var signals = new List<SignalEntity>();
@@ -89,5 +145,5 @@ namespace QuantBook.Models.Strategy
         }
 
        
-    }
+    }      
 }

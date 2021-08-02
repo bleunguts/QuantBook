@@ -28,8 +28,13 @@ namespace QuantBook.Ch11
             LineSeriesCollection2 = new BindableCollection<Series>();
             SignalCollection = new BindableCollection<SignalEntity>();
             PnlCollection = new BindableCollection<PnlEntity>();
-            StartDate = new DateTime(2010, 1, 3);
-            EndDate = new DateTime(2015, 12, 31);            
+
+            // These parameters are specific to the amount of resultant data from Quandl API 
+            // Moving Window < Size of data, the smaller the bigger the Signal data set
+            Ticker = "IBM";
+            StartDate = new DateTime(2012, 3, 1);
+            EndDate = new DateTime(2013, 7, 31);
+            MovingWindow = 5;
         }
 
         public BindableCollection<Series> LineSeriesCollection1 { get; set; }
@@ -85,12 +90,12 @@ namespace QuantBook.Ch11
             set { selecetedPriceType = value; NotifyOfPropertyChange(() => SelectedPriceType); }
         }
 
-        private IEnumerable<SignalTypeEnum> signalTypeEnum;
+        private IEnumerable<SignalTypeEnum> signalType;
 
-        public IEnumerable<SignalTypeEnum> SignalTypeEnum
+        public IEnumerable<SignalTypeEnum> SignalType
         {
             get { return Enum.GetValues(typeof(SignalTypeEnum)).Cast<SignalTypeEnum>(); }
-            set { signalTypeEnum = value; NotifyOfPropertyChange(() => SignalTypeEnum); }
+            set { signalType = value; NotifyOfPropertyChange(() => SignalType); }
         }
 
         private SignalTypeEnum selectedSignalType;
@@ -257,14 +262,12 @@ namespace QuantBook.Ch11
             PnlCollection.Clear();
             LineSeriesCollection1.Clear();
             LineSeriesCollection2.Clear();
-            var data = await SignalHelper.GetStockDataAsync(Ticker, StartDate, EndDate, SelectedPriceType);
+            var data = await SignalHelper.GetStockData(Ticker, StartDate, EndDate, SelectedPriceType);
             var signal = SignalHelper.GetSignal(data, MovingWindow, SelectedSignalType);
             SignalCollection.Clear();
             SignalCollection.AddRange(signal);
             AddSignalCharts();
         }      
-
-    
 
         public void ComputePnl()
         {

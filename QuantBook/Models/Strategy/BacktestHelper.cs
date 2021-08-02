@@ -39,9 +39,7 @@ namespace QuantBook.Models.Strategy
             double? priceIn = null;
             DateTime? dateIn = null;
             int numTrades = 0;
-
             double ishort = 0;
-
 
             for (int i = 1; i < pnls.Count; i++)
             {
@@ -112,8 +110,8 @@ namespace QuantBook.Models.Strategy
                 {
                     tradeType = PnlTradeType.SHORT;
                     numTrades++;
-                    dateIn = item1.DateIn;
-                    priceIn = item1.PriceIn;
+                    dateIn = item1.Date;
+                    priceIn = item1.Price;
                     shares = notional / item1.Price;
                     if (isReinvest)
                         shares = notional + item0.PnLCum / item1.Price;
@@ -127,7 +125,7 @@ namespace QuantBook.Models.Strategy
                 // exit short position
                 if(tradeType == PnlTradeType.SHORT && item0.Signal < signalOut)
                 {
-                    pnlPerTrade = -shares * (item1.Price - (double)priceIn);
+                    pnlPerTrade = -shares * (item1.Price - priceIn.Value);
                     numTrades++;
                     item1.TradeType = PnlTradeType.SHORT;
                     item1.DateIn = dateIn;
