@@ -4,15 +4,15 @@ namespace QuantBook.Models.Strategy
 {
     public class SignalEntity
     {
-        public string Ticker { get; set; }
-        public DateTime Date { get; set; }
-        public double Price { get;  set; }
+        virtual public string Ticker { get; set; }
+        virtual public DateTime Date { get; set; }
+        virtual public double Price { get;  set; }
 
         // signal stuff
-        public double UpperBand { get;  set; }
-        public double PricePredicted { get;  set; }
-        public double LowerBand { get;  set; }
-        public double Signal { get; set; }
+        virtual public double UpperBand { get;  set; }
+        virtual public double PricePredicted { get;  set; }
+        virtual public double LowerBand { get;  set; }
+        virtual public double Signal { get; set; }
 
         public override string ToString()
         {

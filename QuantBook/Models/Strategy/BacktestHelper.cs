@@ -3,6 +3,7 @@ using QuantBook.Ch11;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 
 namespace QuantBook.Models.Strategy
 {
@@ -10,155 +11,119 @@ namespace QuantBook.Models.Strategy
 
     public class BacktestHelper
     {
-        public static IEnumerable<PnlEntity> ComputeLongShortPnl(IEnumerable<SignalEntity> signals, double notional, double signalIn, double signalOut, StrategyTypeEnum strategyType, bool isReinvest)
+        public static IEnumerable<PnlEntity> ComputeLongShortPnl(IEnumerable<SignalEntity> inputSignals, double notional, double signalIn, double signalOut, StrategyTypeEnum strategyType, bool isReinvest)
         {
-            var pnls = new List<PnlEntity>();
-
-            foreach(var s in signals)
+            var signals = new List<SignalEntity>(inputSignals);
+            var pnlEntities = new List<PnlEntity>()
             {
-                pnls.Add(new PnlEntity
-                {
-                    Ticker = s.Ticker,
-                    Date = s.Date,
-                    Price = s.Price,
-                    Signal = strategyType == StrategyTypeEnum.Momentum ? -s.Signal : s.Signal,
-                    TradeType = PnlTradeType.UNSPECIFIED,
-                    DateIn = null,
-                    PriceIn = null,
-                    NumTrades = 0,
-                    PnlPerTrade = 0,
-                    PnlDaily = 0, 
-                    PnLCum = 0
-                });
-            }
+                new PnlEntity(signals[0].Date, signals[0].Ticker, signals[0].Price, signals[0].Signal, PnlTradeType.POSITION_NONE)
+            };
 
-            PnlTradeType tradeType = default;
+
+            PnlTradeType tradeType = PnlTradeType.POSITION_NONE;
             int iLong = 0;
+            double ishort = 0;
             double shares = 0;
             double pnlCum = 0.0;
             double? priceIn = null;
             DateTime? dateIn = null;
             int numTrades = 0;
-            double ishort = 0;
 
-            for (int i = 1; i < pnls.Count; i++)
+            for(int i = 1; i < signals.Count; i++)
             {
                 bool isTrade = false;
 
-                var item0 = pnls[i - 1];
-                var item1 = pnls[i];
+                var prev = signals[i - 1];
+                var current = signals[i];
                 double pnlDaily = 0.0;
                 double pnlPerTrade = 0.0;
+                double prevSignal = strategyType == StrategyTypeEnum.Momentum ? -prev.Signal : prev.Signal;
+                double prevPnlCum = pnlEntities[i - 1].PnLCum;
+                bool hasExitedPostion = false;
 
                 // long position, compute daily PnL:
-                if (tradeType ==  PnlTradeType.LONG && iLong > 0)
+                if (tradeType == PnlTradeType.POSITION_LONG && iLong > 0)
                 {
-                    pnlDaily = shares * (item1.Price - item0.Price);
+                    pnlDaily = shares * (current.Price - prev.Price);
                     pnlCum += pnlDaily;
-                    item1.TradeType = PnlTradeType.LONG;
-                    item1.DateIn = dateIn;
-                    item1.PriceIn = priceIn;
                     isTrade = true;
                 }
 
                 // Enter Long Position:
-                if(tradeType == PnlTradeType.UNSPECIFIED && item0.Signal < -signalIn && !isTrade)
+                if (tradeType == PnlTradeType.POSITION_NONE && prevSignal < -signalIn && !isTrade)
                 {
-                    tradeType = PnlTradeType.LONG;
+                    tradeType = PnlTradeType.POSITION_LONG;
                     numTrades++;
-                    dateIn = item1.Date;
-                    priceIn = item1.Price;
-                    shares = notional / item1.Price;
+                    dateIn = current.Date;
+                    priceIn = current.Price;
+                    shares = notional / current.Price;
                     if (isReinvest)
-                        shares = (notional + item0.PnLCum) / item1.Price;
+                        shares = (notional + prevPnlCum) / current.Price;
                     iLong++;
-                    item1.TradeType = PnlTradeType.LONG;
-                    item1.DateIn = dateIn;
-                    item1.PriceIn = priceIn;
                     isTrade = true;
                 }
 
                 // Exit Long Position:
-                if(tradeType == PnlTradeType.LONG && item0.Signal > -signalOut)
+                if (tradeType == PnlTradeType.POSITION_LONG && prevSignal > -signalOut)
                 {
-                    pnlPerTrade = shares * (item1.Price - (double)priceIn);
+                    pnlPerTrade = shares * (current.Price - (double)priceIn);
                     numTrades++;
-                    item1.TradeType = PnlTradeType.LONG;
-                    item1.DateIn = dateIn;
-                    item1.PriceIn = priceIn;
-                    tradeType = PnlTradeType.UNSPECIFIED;
-                    priceIn = null;
                     shares = 0.0;
                     iLong = 0;
-                    dateIn = null;
                     isTrade = true;
+                    hasExitedPostion = true;
                 }
 
                 // in short position, compute daily PnL
-                if (tradeType == PnlTradeType.SHORT && ishort > 0)
+                if (tradeType == PnlTradeType.POSITION_SHORT && ishort > 0)
                 {
-                    pnlDaily = -shares * (item1.Price - item0.Price);
+                    pnlDaily = -shares * (current.Price - prev.Price);
                     pnlCum += pnlDaily;
-                    item1.TradeType = PnlTradeType.SHORT;
-                    item1.DateIn = dateIn;
-                    item1.PriceIn = priceIn;
+                    tradeType = PnlTradeType.POSITION_SHORT;
                     isTrade = true;
                 }
 
                 // enter short position
-                if (tradeType == PnlTradeType.UNSPECIFIED && item0.Signal > signalIn && !isTrade)
+                if (tradeType == PnlTradeType.POSITION_NONE && prevSignal > signalIn && !isTrade)
                 {
-                    tradeType = PnlTradeType.SHORT;
+                    tradeType = PnlTradeType.POSITION_SHORT;
                     numTrades++;
-                    dateIn = item1.Date;
-                    priceIn = item1.Price;
-                    shares = notional / item1.Price;
+                    dateIn = current.Date;
+                    priceIn = current.Price;
+                    shares = notional / current.Price;
                     if (isReinvest)
-                        shares = notional + item0.PnLCum / item1.Price;
-                    ishort++;
-                    item1.TradeType = PnlTradeType.SHORT;
-                    item1.DateIn = dateIn;
-                    item1.PriceIn = priceIn;
+                        shares = notional + prevPnlCum / current.Price;
+                    ishort++;           
                     isTrade = true;
                 }
-                
+
                 // exit short position
-                if(tradeType == PnlTradeType.SHORT && item0.Signal < signalOut)
+                if (tradeType == PnlTradeType.POSITION_SHORT && prevSignal < signalOut)
                 {
-                    pnlPerTrade = -shares * (item1.Price - priceIn.Value);
-                    numTrades++;
-                    item1.TradeType = PnlTradeType.SHORT;
-                    item1.DateIn = dateIn;
-                    item1.PriceIn = priceIn;
-                    tradeType = PnlTradeType.UNSPECIFIED;
-                    priceIn = null;
+                    pnlPerTrade = -shares * (current.Price - priceIn.Value);
+                    numTrades++;                                     
                     shares = 0.0;
                     ishort = 0;
-                    dateIn = null;
                     isTrade = true;
+                    hasExitedPostion = true;
                 }
 
                 // compute pnl for holding position
-                double pnlDailyHold = notional * (item1.Price - item0.Price) / pnls[0].Price;
-                double pnlCumHold = notional * (item1.Price - pnls[0].Price) / pnls[0].Price;
+                var firstPrice = signals.First().Price;
+                double pnlDailyHold = notional * (current.Price - prev.Price) / firstPrice;
+                double pnlCumHold = notional * (current.Price - firstPrice) / firstPrice;
 
-                item1.NumTrades = numTrades;
-                item1.PnLCum = pnlCum;
-                item1.PnlDaily = pnlDaily;
-                item1.PnlPerTrade = pnlPerTrade;
-                item1.PnlDailyHold = pnlDailyHold;
-                item1.PnLCumHold = pnlCumHold;
-            }
-
-            if (strategyType == StrategyTypeEnum.Momentum)
-            {
-                foreach(var p in pnls)
+                pnlEntities.Add(new PnlEntity(current.Date, current.Ticker, current.Price, current.Signal, tradeType, numTrades, pnlCum, pnlDaily, pnlPerTrade, pnlDailyHold, pnlCumHold, dateIn, priceIn));
+                
+                if (hasExitedPostion)
                 {
-                    p.Signal = -p.Signal;
+                    tradeType = PnlTradeType.POSITION_NONE;
+                    dateIn = null;
+                    priceIn = null;
                 }
-            }
+            }               
 
-            return pnls;
+            return pnlEntities;
         }     
 
         public static DataTable GetDrawDown(BindableCollection<PnlEntity> pnlCollection, double notional)

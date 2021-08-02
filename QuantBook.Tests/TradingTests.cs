@@ -66,10 +66,10 @@ namespace QuantBook.Tests
 
 
             // there are two trades LONG and SHORT (with two positions each enter/exit)
-            Assert.That(pnlEntities.Where(p => p.TradeType == PnlTradeType.SHORT).ToList(), Has.Count.EqualTo(2));
-            Assert.That(pnlEntities.Where(p => p.TradeType == PnlTradeType.LONG).ToList(), Has.Count.EqualTo(2));
-            AssertPosition(pnlEntities.Where(p => p.TradeType == PnlTradeType.LONG));
-            AssertPosition(pnlEntities.Where(p => p.TradeType == PnlTradeType.SHORT));
+            Assert.That(pnlEntities.Where(p => p.TradeType == PnlTradeType.POSITION_SHORT).ToList(), Has.Count.EqualTo(2));
+            Assert.That(pnlEntities.Where(p => p.TradeType == PnlTradeType.POSITION_LONG).ToList(), Has.Count.EqualTo(2));
+            AssertPosition(pnlEntities.Where(p => p.TradeType == PnlTradeType.POSITION_LONG));
+            AssertPosition(pnlEntities.Where(p => p.TradeType == PnlTradeType.POSITION_SHORT));
 
             void AssertPosition(IEnumerable<PnlEntity> positions)
             {
