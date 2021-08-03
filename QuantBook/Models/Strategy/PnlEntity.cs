@@ -5,16 +5,30 @@ namespace QuantBook.Models.Strategy
     public enum PnlTradeType { POSITION_NONE= 0, POSITION_LONG, POSITION_SHORT }
     public class PnlEntity
     {     
-        public PnlEntity(DateTime date, string ticker, double price, double signal, PnlTradeType tradeType)
-        {
-            Date = date;
-            Ticker = ticker;
-            Price = price;
-            Signal = signal;
-            TradeType = tradeType;
+        public static PnlEntity Build(DateTime date, string ticker, double price, double signal, PnlTradeType tradeType)
+        {            
+            return new PnlEntity(date, ticker, price, signal, 0.0, 0.0, 0.0, 0.0, 0.0, tradeType, null, null, 0);
         }
 
-        public PnlEntity(DateTime date, string ticker, double price, double signal, PnlTradeType tradeType, int numTrades, double pnLCum, double pnLDaily, double pnlPerTrade, double pnlDailyHold, double pnlCumHold, DateTime? dateIn, double? priceIn) 
+        public static PnlEntity Build(DateTime date, string ticker, double price, double signal, double pnLCum, double pnLDaily, double pnlPerTrade, double pnlDailyHold, double pnlCumHold, ActivePosition activePosition)            
+        {
+            int numTrades = 0;
+            var tradeType = PnlTradeType.POSITION_NONE;
+            DateTime? dateIn = null;
+            double? priceIn = null;
+
+            if (activePosition.IsActive)
+            {
+                numTrades = activePosition.NumTrades;
+                tradeType = activePosition.TradeType;
+                priceIn = activePosition.PriceIn;
+                dateIn = activePosition.DateIn;
+            }
+
+            return new PnlEntity(date, ticker, price, signal, pnLCum, pnLDaily, pnlPerTrade, pnlDailyHold, pnlCumHold, tradeType, dateIn, priceIn, numTrades);
+        }
+
+        private PnlEntity(DateTime date, string ticker, double price, double signal, double pnLCum, double pnLDaily, double pnlPerTrade, double pnlDailyHold, double pnlCumHold, PnlTradeType tradeType, DateTime? dateIn, double? priceIn, int numTrades)
         {
             Date = date;
             Ticker = ticker;

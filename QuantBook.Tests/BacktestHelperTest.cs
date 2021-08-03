@@ -78,6 +78,7 @@ namespace QuantBook.Tests
 
             var pnlEntities = BacktestHelper.ComputeLongShortPnl(signals, notional, signalIn, signalOut, StrategyTypeEnum.MeanReversion, false).ToList();
             Print(pnlEntities);
+
             (int enterTradeIndex, int exitTradeIndex) = ToTrades(pnlEntities, PnlTradeType.POSITION_SHORT);
             var enterTrade = pnlEntities[enterTradeIndex];
             Assert.That(enterTrade.Date, Is.EqualTo(signals[enterTradeIndex].Date));
