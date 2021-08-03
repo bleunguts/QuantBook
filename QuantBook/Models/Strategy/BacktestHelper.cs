@@ -19,38 +19,47 @@ namespace QuantBook.Models.Strategy
                 new PnlEntity(signals[0].Date, signals[0].Ticker, signals[0].Price, signals[0].Signal, PnlTradeType.POSITION_NONE)
             };
 
-
-            PnlTradeType tradeType = PnlTradeType.POSITION_NONE;
-            int iLong = 0;
-            double ishort = 0;
             double shares = 0;
             double pnlCum = 0.0;
+            int numTrades = 0;
+
+            bool isLongPosition = false;
+            bool isShortPosition = false;
+            PnlTradeType tradeType = PnlTradeType.POSITION_NONE;
             double? priceIn = null;
             DateTime? dateIn = null;
-            int numTrades = 0;
 
             for(int i = 1; i < signals.Count; i++)
             {
-                bool isTrade = false;
+                bool hasProcessedThisSignal = false;              
+                bool hasExitedPostion = false;
 
                 var prev = signals[i - 1];
                 var current = signals[i];
+
                 double pnlDaily = 0.0;
                 double pnlPerTrade = 0.0;
                 double prevSignal = strategyType == StrategyTypeEnum.Momentum ? -prev.Signal : prev.Signal;
                 double prevPnlCum = pnlEntities[i - 1].PnLCum;
-                bool hasExitedPostion = false;
 
                 // long position, compute daily PnL:
-                if (tradeType == PnlTradeType.POSITION_LONG && iLong > 0)
+                if (isLongPosition)
                 {
                     pnlDaily = shares * (current.Price - prev.Price);
                     pnlCum += pnlDaily;
-                    isTrade = true;
+                    hasProcessedThisSignal = true;
+                }
+
+                // in short position, compute daily PnL
+                if (isShortPosition)
+                {
+                    pnlDaily = -shares * (current.Price - prev.Price);
+                    pnlCum += pnlDaily;
+                    hasProcessedThisSignal = true;
                 }
 
                 // Enter Long Position:
-                if (tradeType == PnlTradeType.POSITION_NONE && prevSignal < -signalIn && !isTrade)
+                if (tradeType == PnlTradeType.POSITION_NONE && prevSignal < -signalIn && !hasProcessedThisSignal)
                 {
                     tradeType = PnlTradeType.POSITION_LONG;
                     numTrades++;
@@ -59,8 +68,8 @@ namespace QuantBook.Models.Strategy
                     shares = notional / current.Price;
                     if (isReinvest)
                         shares = (notional + prevPnlCum) / current.Price;
-                    iLong++;
-                    isTrade = true;
+                    isLongPosition = true;
+                    hasProcessedThisSignal = true;
                 }
 
                 // Exit Long Position:
@@ -69,22 +78,13 @@ namespace QuantBook.Models.Strategy
                     pnlPerTrade = shares * (current.Price - (double)priceIn);
                     numTrades++;
                     shares = 0.0;
-                    iLong = 0;
-                    isTrade = true;
+                    isLongPosition = false;  
+                    hasProcessedThisSignal = true;
                     hasExitedPostion = true;
-                }
-
-                // in short position, compute daily PnL
-                if (tradeType == PnlTradeType.POSITION_SHORT && ishort > 0)
-                {
-                    pnlDaily = -shares * (current.Price - prev.Price);
-                    pnlCum += pnlDaily;
-                    tradeType = PnlTradeType.POSITION_SHORT;
-                    isTrade = true;
-                }
+                }           
 
                 // enter short position
-                if (tradeType == PnlTradeType.POSITION_NONE && prevSignal > signalIn && !isTrade)
+                if (tradeType == PnlTradeType.POSITION_NONE && prevSignal > signalIn && !hasProcessedThisSignal)
                 {
                     tradeType = PnlTradeType.POSITION_SHORT;
                     numTrades++;
@@ -93,8 +93,8 @@ namespace QuantBook.Models.Strategy
                     shares = notional / current.Price;
                     if (isReinvest)
                         shares = notional + prevPnlCum / current.Price;
-                    ishort++;           
-                    isTrade = true;
+                    isShortPosition = true;         
+                    hasProcessedThisSignal = true;
                 }
 
                 // exit short position
@@ -103,23 +103,23 @@ namespace QuantBook.Models.Strategy
                     pnlPerTrade = -shares * (current.Price - priceIn.Value);
                     numTrades++;                                     
                     shares = 0.0;
-                    ishort = 0;
-                    isTrade = true;
+                    isShortPosition = false;
+                    hasProcessedThisSignal = true;
                     hasExitedPostion = true;
                 }
 
                 // compute pnl for holding position
-                var firstPrice = signals.First().Price;
-                double pnlDailyHold = notional * (current.Price - prev.Price) / firstPrice;
-                double pnlCumHold = notional * (current.Price - firstPrice) / firstPrice;
+                var initialPrice = signals.First().Price;
+                double pnlDailyHold = notional * (current.Price - prev.Price) / initialPrice;
+                double pnlCumHold = notional * (current.Price - initialPrice) / initialPrice;
 
                 pnlEntities.Add(new PnlEntity(current.Date, current.Ticker, current.Price, current.Signal, tradeType, numTrades, pnlCum, pnlDaily, pnlPerTrade, pnlDailyHold, pnlCumHold, dateIn, priceIn));
                 
                 if (hasExitedPostion)
                 {
-                    tradeType = PnlTradeType.POSITION_NONE;
                     dateIn = null;
                     priceIn = null;
+                    tradeType = PnlTradeType.POSITION_NONE;
                 }
             }               
 
