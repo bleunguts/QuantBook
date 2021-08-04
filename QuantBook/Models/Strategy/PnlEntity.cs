@@ -37,9 +37,9 @@ namespace QuantBook.Models.Strategy
             TradeType = tradeType;
             NumTrades = numTrades;
             PnLCum = pnLCum;
-            PnlDaily = pnLDaily;
+            PnLDaily = pnLDaily;
             PnlPerTrade = pnlPerTrade;
-            PnlDailyHold = pnlDailyHold;
+            PnLDailyHold = pnlDailyHold;
             PnLCumHold = pnlCumHold;
             DateIn = dateIn;
             PriceIn = priceIn;
@@ -54,14 +54,14 @@ namespace QuantBook.Models.Strategy
         public double? PriceIn { get; set; }
         public int NumTrades { get; set; }
         public double PnlPerTrade { get; set; }
-        public double PnlDaily { get; set; }
-        public double PnlDailyHold { get; set; }
+        public double PnLDaily { get; set; }
+        public double PnLDailyHold { get; set; }
         public double PnLCumHold { get; internal set; }
         public double PnLCum { get; internal set; }
 
         public override string ToString()
         {
-            return $"Ticker={Ticker},Date={Date.ToShortDateString()},Price={Price},Signal={Signal},Type={TradeType},NumTrades={NumTrades},DateIn={DateIn},PriceIn{PriceIn},PnlPerTrade={PnlPerTrade},PnlDaily={PnlDaily},PnlCum={PnLCum},PnlDailyHold={PnlDailyHold},PnlCumHold={PnLCumHold}";
+            return $"Ticker={Ticker},Date={Date.ToShortDateString()},Price={Price},Signal={Signal},Type={TradeType},NumTrades={NumTrades},DateIn={DateIn},PriceIn{PriceIn},PnlPerTrade={PnlPerTrade},PnlDaily={PnLDaily},PnlCum={PnLCum},PnlDailyHold={PnLDailyHold},PnlCumHold={PnLCumHold}";
         }
     }
 }

@@ -150,7 +150,7 @@ namespace QuantBook.Tests
             {
                 PnlEntity p = pnlEntities[i];
                 //{0:0.##}
-                Console.WriteLine($"{p.Date.ToShortDateString()},Price={p.Price:0.##},Signal={p.Signal:0.##},PnlPerTrade={p.PnlPerTrade:0.##},PnlDaily={p.PnlDaily:0.##},PnlCum={p.PnLCum:0.##},PnlDailyHold={p.PnlDailyHold:0.##},PnlCumHold={p.PnLCumHold:0.##}");
+                Console.WriteLine($"{p.Date.ToShortDateString()},Price={p.Price:0.##},Signal={p.Signal:0.##},PnlPerTrade={p.PnlPerTrade:0.##},PnlDaily={p.PnLDaily:0.##},PnlCum={p.PnLCum:0.##},PnlDailyHold={p.PnLDailyHold:0.##},PnlCumHold={p.PnLCumHold:0.##}");
             }
         }
 

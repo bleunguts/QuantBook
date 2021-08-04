@@ -99,12 +99,12 @@ namespace QuantBook.Models.Strategy
                 
                 pnlEntities.Add(PnlEntity.Build(current.Date, current.Ticker, current.Price, current.Signal, pnlCum, pnlDaily, pnlPerTrade, pnlDailyHold, pnlCumHold, activePosition));
 
-                if (exitingPosition) { ExitPosition(activePosition); }
+                if (exitingPosition) { ExitPosition(ref activePosition); }
             }               
 
             return pnlEntities;
 
-            void ExitPosition(ActivePosition position) => position = ActivePosition.INACTIVE;
+            void ExitPosition(ref ActivePosition position) => position = ActivePosition.INACTIVE;
             ActivePosition EnterPosition(PnlTradeType tradeType, DateTime dateIn, double priceIn, double shares) => new ActivePosition(tradeType, dateIn, priceIn, shares);
         }          
 
