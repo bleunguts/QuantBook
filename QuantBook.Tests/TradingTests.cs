@@ -127,8 +127,6 @@ namespace QuantBook.Tests
         }
 
         Dictionary<int, int> yearCounter = new Dictionary<int, int>();
-
-
         #endregion
 
         #region trading signals (SignalHelper)

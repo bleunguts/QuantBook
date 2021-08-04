@@ -271,11 +271,15 @@ namespace QuantBook.Ch11
 
         public void ComputePnl()
         {
+            if (!SignalCollection.Any())
+            {
+                System.Windows.Forms.MessageBox.Show("There are no signals.");
+                return;
+            }
+
             var pnl = BacktestHelper.ComputeLongShortPnl(SignalCollection, Notional, SignalIn, SignalOut, SelectedStrategyType, IsReinvest);
             PnlCollection.Clear();
             PnlCollection.AddRange(pnl);
-
-
             DataTable dt = new DataTable();
             dt.Columns.AddRange(new[]
             {
@@ -293,7 +297,32 @@ namespace QuantBook.Ch11
             }
             YearlyPnlTable = dt;
 
-            drawdownTable = BacktestHelper.GetDrawDown(PnlCollection, Notional);
+            DataTable dt2 = new DataTable();
+            dt2.Columns.AddRange(new[]
+            {
+                new DataColumn("Date", typeof(DateTime)),
+                new DataColumn("PnL", typeof(double)),
+                new DataColumn("Drawdown", typeof(double)),
+                new DataColumn("MaxDrawdown", typeof(double)),
+                new DataColumn("DrawUp", typeof(double)),
+                new DataColumn("MaxDrawUp", typeof(double)),
+                new DataColumn("PnLHold", typeof(double)),
+                new DataColumn("DrawDownHold", typeof(double)),
+                new DataColumn("MaxDrawDownHold", typeof(double)),
+                new DataColumn("DrawupHold", typeof(double)),
+                new DataColumn("MaxDrawupHold", typeof(double)),
+            });         
+            var results = BacktestHelper.GetDrawDown(PnlCollection.ToList(), Notional);
+            double maxDrawdown = results.Max(r => r.drawdown);
+            double maxDrawup = results.Max(r => r.drawup);
+            double maxDrawdownHold = results.Max(r => r.drawdownHold);
+            double maxDrawupHold = results.Max(r => r.drawupHold);            
+            foreach(var row in results)
+            {
+                dt2.Rows.Add(row.date, row.pnl, row.drawdown, maxDrawdown, row.drawup, maxDrawup, row.pnlHold, row.drawdownHold, maxDrawdownHold, row.drawupHold, maxDrawupHold);
+            }
+
+            drawdownTable = dt2;
             AddPnlCharts();
         }
 

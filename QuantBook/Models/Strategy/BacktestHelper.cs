@@ -12,7 +12,7 @@ namespace QuantBook.Models.Strategy
     public class BacktestHelper
     {   
         public static IEnumerable<PnlEntity> ComputeLongShortPnl(IEnumerable<SignalEntity> inputSignals, double notional, double signalIn, double signalOut, StrategyTypeEnum strategyType, bool isReinvest)
-        {
+        {       
             ActivePosition activePosition = ActivePosition.INACTIVE;
             var signals = new List<SignalEntity>(inputSignals);
             var pnlEntities = new List<PnlEntity>() { PnlEntity.Build(signals[0].Date, signals[0].Ticker, signals[0].Price, signals[0].Signal, PnlTradeType.POSITION_NONE) };
@@ -106,12 +106,7 @@ namespace QuantBook.Models.Strategy
 
             void ExitPosition(ref ActivePosition position) => position = ActivePosition.INACTIVE;
             ActivePosition EnterPosition(PnlTradeType tradeType, DateTime dateIn, double priceIn, double shares) => new ActivePosition(tradeType, dateIn, priceIn, shares);
-        }          
-
-        public static DataTable GetDrawDown(BindableCollection<PnlEntity> pnlCollection, double notional)
-        {
-            throw new NotImplementedException();
-        }
+        }             
 
         public static List<(string ticker, string year, int numTrades, double pnl, double sp0, double pnl2, double sp1)> GetYearlyPnl(List<PnlEntity> p)
         {
@@ -158,6 +153,32 @@ namespace QuantBook.Models.Strategy
             double sp1 = Math.Round(Math.Sqrt(252.0) * avg1 / std1, 4);
 
             return new[] { sp, sp1 };
+        }
+
+        public static List<DrawDownResult> GetDrawDown(List<PnlEntity> pnlInput, double notional)
+        {
+            var results = new List<DrawDownResult>();
+
+            double max = 0; double maxHold = 0;
+            double min = 2.0 * notional; double minHold = 2.0 * notional;
+
+            for (int i = 0; i < pnlInput.Count; i++)
+            {
+                var current = pnlInput[i];
+                double pnl = current.PnLCum + notional;
+                double pnlHold = current.PnLCumHold + notional;
+                max = Math.Max(max, pnl);
+                min = Math.Min(min, pnl);
+                maxHold = Math.Max(maxHold, pnlHold);
+                minHold = Math.Min(minHold, pnlHold);
+                double drawdown = 100.0 * (max - pnl) / max;
+                double drawdownHold = 100.0 * (maxHold - pnlHold) / maxHold;
+                double drawup = 100.0 * (pnl - minHold) / pnl;
+                double drawupHold = 100.0 * (pnlHold - minHold) / pnlHold;
+                results.Add((current.Date, pnl, drawdown, drawup, pnlHold, drawdownHold, drawupHold));
+            }
+
+            return results;
         }
     }
 
@@ -209,5 +230,73 @@ namespace QuantBook.Models.Strategy
         {
             return new { tradeType, dateIn, priceIn, shares, numTrades }.GetHashCode();
         }    
+    }
+
+    public struct DrawDownResult
+    {
+        public DateTime date;
+        public double pnl;
+        public double drawdown;
+        public double drawup;
+        public double pnlHold;
+        public double drawdownHold;
+        public double drawupHold;
+
+        public DrawDownResult(DateTime date, double pnl, double drawdown, double drawup, double pnlHold, double drawdownHold, double drawupHold)
+        {
+            this.date = date;
+            this.pnl = pnl;
+            this.drawdown = drawdown;            
+            this.drawup = drawup;            
+            this.pnlHold = pnlHold;
+            this.drawdownHold = drawdownHold;
+            this.drawupHold = drawupHold;         
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is DrawDownResult other &&
+                   date == other.date &&
+                   pnl == other.pnl &&
+                   drawdown == other.drawdown &&
+                   drawup == other.drawup &&
+                   pnlHold == other.pnlHold &&
+                   drawdownHold == other.drawdownHold &&
+                   drawupHold == other.drawupHold;
+        }
+
+        public override int GetHashCode()
+        {
+            int hashCode = 1211010681;
+            hashCode = hashCode * -1521134295 + date.GetHashCode();
+            hashCode = hashCode * -1521134295 + pnl.GetHashCode();
+            hashCode = hashCode * -1521134295 + drawdown.GetHashCode();
+            hashCode = hashCode * -1521134295 + drawup.GetHashCode();
+            hashCode = hashCode * -1521134295 + pnlHold.GetHashCode();
+            hashCode = hashCode * -1521134295 + drawdownHold.GetHashCode();
+            hashCode = hashCode * -1521134295 + drawupHold.GetHashCode();
+            return hashCode;
+        }
+
+        public void Deconstruct(out DateTime date, out double pnl, out double drawdown, out double drawup, out double pnlHold, out double drawdownHold, out double drawupHold)
+        {
+            date = this.date;
+            pnl = this.pnl;
+            drawdown = this.drawdown;
+            drawup = this.drawup;
+            pnlHold = this.pnlHold;
+            drawdownHold = this.drawdownHold;
+            drawupHold = this.drawupHold;
+        }
+
+        //public static implicit operator (DateTime date, double pnl, double drawdown, double drawup, double maxDrawup, double pnlHold, double drawdownHold, double drawupHold)(DrawDownResult value)
+        //{
+        //    return (value.date, value.pnl, value.drawdown, value.drawup, value.pnlHold, value.drawdownHold, value.drawupHold);
+        //}
+
+        public static implicit operator DrawDownResult((DateTime date, double pnl, double drawdown, double drawup, double pnlHold, double drawdownHold, double drawupHold) value)
+        {
+            return new DrawDownResult(value.date, value.pnl, value.drawdown, value.drawup, value.pnlHold, value.drawdownHold, value.drawupHold);
+        }
     }
 }
