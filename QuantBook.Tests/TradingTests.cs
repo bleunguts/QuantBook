@@ -1,4 +1,5 @@
 ﻿using Caliburn.Micro;
+using Moq;
 using NUnit.Framework;
 using QuantBook.Models.Strategy;
 using System;
@@ -74,7 +75,59 @@ namespace QuantBook.Tests
                 Assert.That(exitPosition.PnLCumHold, Is.GreaterThan(0));
                 Assert.That(exitPosition.PnLDailyHold, Is.GreaterThan(0).Or.LessThan(0));
             }
+        }        
+
+        [Test]
+        public void WhenGettingYearlyPnl()
+        {            
+            var today = DateTime.Now;            
+            var pnls = new List<PnlEntity>
+            {
+                // Sharpe takes stdev PnlDaily, PnlDailyHold and avgs of them as well
+                GiveMeAPnlEntitiy(NextDateFor(2020), 1, 100.0, 0, 0, 0),
+                GiveMeAPnlEntitiy(NextDateFor(2020), 1, 110.0, 10, 10, 50),
+                GiveMeAPnlEntitiy(NextDateFor(2020), 2, 120.0, 10, 20, 30),
+                GiveMeAPnlEntitiy(NextDateFor(2021), 0, 40.0, 10, 90, 80),
+                GiveMeAPnlEntitiy(NextDateFor(2021), 1, 130.0, 30, 80, 210),
+                GiveMeAPnlEntitiy(NextDateFor(2021), 1, 140.0, 40, 30, 310),
+                GiveMeAPnlEntitiy(NextDateFor(2021), 2, 150.0, 50, 190, 50),
+            };
+
+            foreach (var row in BacktestHelper.GetYearlyPnl(pnls))
+            {
+                Console.WriteLine($"numTrades={row.numTrades},ticker={row.ticker},year={row.year},pnl={row.pnl},pnl2={row.pnl2},sp0={row.sp0},sp1={row.sp1}");
+            }
+
+            PnlEntity GiveMeAPnlEntitiy(DateTime date, int numTrades, double pnlDaily, double pnlCum, double pnlDailyHold, double pnlCumHold)
+            {
+                var pnl = new Mock<PnlEntity>();
+                pnl.SetupGet(p => p.Date).Returns(date);
+                pnl.SetupGet(p => p.NumTrades).Returns(numTrades);
+                pnl.SetupGet(p => p.PnLDaily).Returns(pnlDaily);
+                pnl.SetupGet(p => p.PnLCum).Returns(pnlCum);
+                pnl.SetupGet(p => p.PnLDailyHold).Returns(pnlDailyHold);
+                pnl.SetupGet(p => p.PnLCumHold).Returns(pnlCumHold);
+                pnl.SetupGet(p => p.Ticker).Returns("TICKER");
+
+                return pnl.Object;           
+            }
+
+            DateTime NextDateFor(int year)
+            {
+                var date = new DateTime(year, 2, 3);
+                int counter;
+
+                if (!yearCounter.TryGetValue(year, out counter))
+                {
+                    yearCounter.Add(year, 0);
+                }
+
+                return date.AddDays(counter);
+            }
         }
+
+        Dictionary<int, int> yearCounter = new Dictionary<int, int>();
+
 
         #endregion
 

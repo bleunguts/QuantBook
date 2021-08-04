@@ -274,8 +274,25 @@ namespace QuantBook.Ch11
             var pnl = BacktestHelper.ComputeLongShortPnl(SignalCollection, Notional, SignalIn, SignalOut, SelectedStrategyType, IsReinvest);
             PnlCollection.Clear();
             PnlCollection.AddRange(pnl);
-            DataTable dt = BacktestHelper.GetYearlyPnl(PnlCollection);
+
+
+            DataTable dt = new DataTable();
+            dt.Columns.AddRange(new[]
+            {
+                new DataColumn("Ticker",typeof(string)),
+                new DataColumn("Period",typeof(string)),
+                new DataColumn("NumTrades",typeof(string)),
+                new DataColumn("PnL",typeof(string)),
+                new DataColumn("Sharpe",typeof(string)),
+                new DataColumn("PnLHold",typeof(string)),
+                new DataColumn("SharpeHold",typeof(string)),
+            });
+            foreach (var row in BacktestHelper.GetYearlyPnl(PnlCollection.ToList()))
+            {
+                dt.Rows.Add(row.ticker, row.year, row.numTrades, row.pnl, row.sp0, row.pnl2, row.sp1);
+            }
             YearlyPnlTable = dt;
+
             drawdownTable = BacktestHelper.GetDrawDown(PnlCollection, Notional);
             AddPnlCharts();
         }

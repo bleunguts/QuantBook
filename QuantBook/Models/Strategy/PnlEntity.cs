@@ -5,6 +5,8 @@ namespace QuantBook.Models.Strategy
     public enum PnlTradeType { POSITION_NONE= 0, POSITION_LONG, POSITION_SHORT }
     public class PnlEntity
     {     
+        public PnlEntity() { }
+
         public static PnlEntity Build(DateTime date, string ticker, double price, double signal, PnlTradeType tradeType)
         {            
             return new PnlEntity(date, ticker, price, signal, 0.0, 0.0, 0.0, 0.0, 0.0, tradeType, null, null, 0);
@@ -45,19 +47,19 @@ namespace QuantBook.Models.Strategy
             PriceIn = priceIn;
         }
 
-        public string Ticker { get; set; }
-        public DateTime Date { get; internal set; }
-        public double Price { get; set; }
-        public double Signal { get; set; }
-        public PnlTradeType TradeType { get; set; }
-        public DateTime? DateIn { get; set; }
-        public double? PriceIn { get; set; }
-        public int NumTrades { get; set; }
-        public double PnlPerTrade { get; set; }
-        public double PnLDaily { get; set; }
-        public double PnLDailyHold { get; set; }
-        public double PnLCumHold { get; internal set; }
-        public double PnLCum { get; internal set; }
+        public virtual string Ticker { get; set; }
+        public virtual DateTime Date { get; set; }
+        public virtual double Price { get; set; }
+        public virtual double Signal { get; set; }
+        public virtual PnlTradeType TradeType { get; set; }
+        public virtual DateTime? DateIn { get; set; }
+        public virtual double? PriceIn { get; set; }
+        public virtual int NumTrades { get; set; }
+        public virtual double PnlPerTrade { get; set; }
+        public virtual double PnLDaily { get; set; }
+        public virtual double PnLDailyHold { get; set; }
+        public virtual double PnLCumHold { get; set; }
+        public virtual double PnLCum { get; set; }
 
         public override string ToString()
         {

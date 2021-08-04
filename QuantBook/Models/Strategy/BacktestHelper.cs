@@ -113,9 +113,51 @@ namespace QuantBook.Models.Strategy
             throw new NotImplementedException();
         }
 
-        public static DataTable GetYearlyPnl(BindableCollection<PnlEntity> pnlCollection)
+        public static List<(string ticker, string year, int numTrades, double pnl, double sp0, double pnl2, double sp1)> GetYearlyPnl(List<PnlEntity> p)
         {
-            throw new NotImplementedException();
+            DateTime firstDate = p.First().Date;
+            DateTime lastDate = p.Last().Date;
+
+            DateTime currentDate = new DateTime(firstDate.Year, 1, 1);                     
+            var result = new List<(string ticker, string year, int numTrades, double pnl, double sp0, double pnl2, double sp1)>();
+            while(currentDate <= lastDate)
+            {
+                DateTime FIRST_DAY_OF_THAT_YEAR = new DateTime(currentDate.Year, 1, 1);
+                DateTime LAST_DAY_OF_THAT_YEAR = new DateTime(currentDate.Year, 12, 31);
+                var pnls = p.Where(pnl => pnl.Date >= FIRST_DAY_OF_THAT_YEAR && pnl.Date <= LAST_DAY_OF_THAT_YEAR).OrderBy(pnl => pnl.Date).ToList();
+                if (pnls.Count > 0)
+                {
+                    PnlEntity first = pnls.First();
+                    PnlEntity last = pnls.Last();                                      
+                    var entitiesWithPnlDaily = pnls.Where(pnl => pnl.PnLDaily != 0).OrderBy(pnl => pnl.Date).ToList();
+                    if(entitiesWithPnlDaily.Count > 0)
+                    {
+                        double[] sp = GetSharpe(entitiesWithPnlDaily);
+                        int numTrades = last.NumTrades - first.NumTrades;
+                        double pnl1 = last.PnLCum - first.PnLCum + first.PnLDaily;
+                        double pnl2 = last.PnLCumHold - first.PnLCumHold + first.PnLDailyHold;
+                        result.Add((first.Ticker, currentDate.Year.ToString(), numTrades, Math.Round(pnl1, 0), sp[0], Math.Round(pnl2, 0), sp[1]));
+                    }
+                }
+                currentDate = currentDate.AddYears(1);
+            }
+            double[] sp1 = GetSharpe(p);
+            double sum = Math.Round(p.Last().PnLCum, 0);
+            double sum1 = Math.Round(p.Last().PnLCumHold, 0);
+            result.Add((p.First().Ticker, "Total", p.Last().NumTrades, sum, sp1[0], sum1, sp1[1]));
+            return result;
+        }
+
+        private static double[] GetSharpe(List<PnlEntity> pnl)
+        {
+            double avg = pnl.Average(x => x.PnLDaily);
+            double std = pnl.StdDev(x => x.PnLDaily);
+            double avg1 = pnl.Average(x => x.PnLDailyHold);
+            double std1 = pnl.StdDev(x => x.PnLDailyHold);
+            double sp = Math.Round(Math.Sqrt(252.0) * avg / std, 4);
+            double sp1 = Math.Round(Math.Sqrt(252.0) * avg1 / std1, 4);
+
+            return new[] { sp, sp1 };
         }
     }
 
