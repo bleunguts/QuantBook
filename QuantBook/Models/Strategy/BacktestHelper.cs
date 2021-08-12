@@ -145,7 +145,7 @@ namespace QuantBook.Models.Strategy
             return result;
         }
 
-        private static double[] GetSharpe(List<PnlEntity> pnl)
+        public static double[] GetSharpe(List<PnlEntity> pnl)
         {
             double avg = pnl.Average(x => x.PnLDaily);
             double std = pnl.StdDev(x => x.PnLDaily);

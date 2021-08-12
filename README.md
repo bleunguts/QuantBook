@@ -7,9 +7,7 @@ Skipped these sections below:
 * Data Visualization Chapter pg143
 	* Implemented MSChart and ignored the rest
 * Trading Strategies and Backtesting
-	* Backtesting System Implementation
-	* Backtesting System Applications
-	* Pairs Trading
+	* Pairs Trading (MEAN REVERTING STRATEGY, market neutral whereby long on under performers and short on over performer when spread is away from mean)
 	* Backtesting for Pairs Trading
 * Pricing European Options using QuantLib pg 417
 	* Implement other engines Binomiall Jarrow Rudd, Binomial Additive Quiprobabilities, Binomial Trigeorgis,
