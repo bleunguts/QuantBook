@@ -17,7 +17,8 @@ namespace QuantBook.Models.Strategy
             var signals = new List<SignalEntity>(inputSignals);
             var pnlEntities = new List<PnlEntity>() { PnlEntity.Build(signals[0].Date, signals[0].Ticker, signals[0].Price, signals[0].Signal, PnlTradeType.POSITION_NONE) };
          
-            double pnlCum = 0.0;         
+            double pnlCum = 0.0;
+            int totalNumTrades = 0;
             for(int i = 1; i < signals.Count; i++)
             {
                 bool exitingPosition = false;
@@ -42,8 +43,8 @@ namespace QuantBook.Models.Strategy
                         if (prevSignal > -signalOut)
                         {
                             pnlPerTrade = activePosition.Shares * (current.Price - activePosition.PriceIn);
-                            activePosition.IncrementNumTrades();
                             exitingPosition = true;
+                            totalNumTrades++;
                         }
                     }
                     else if(activePosition.IsShortPosition())  
@@ -56,8 +57,8 @@ namespace QuantBook.Models.Strategy
                         if (prevSignal < signalOut)
                         {
                             pnlPerTrade = -activePosition.Shares * (current.Price - activePosition.PriceIn);
-                            activePosition.IncrementNumTrades();
                             exitingPosition = true;
+                            totalNumTrades++;
                         }
                     }                                                 
                 }
@@ -89,6 +90,7 @@ namespace QuantBook.Models.Strategy
                     {                        
                         var shares = isReinvest ? (notional + prevPnlCum) / current.Price : notional / current.Price;
                         activePosition = EnterPosition(positionType, current.Date, current.Price, shares);
+                        totalNumTrades++;
                     }
                 }
 
@@ -97,7 +99,7 @@ namespace QuantBook.Models.Strategy
                 double pnlDailyHold = notional * (current.Price - prev.Price) / initialPrice;
                 double pnlCumHold = notional * (current.Price - initialPrice) / initialPrice;
                 
-                pnlEntities.Add(PnlEntity.Build(current.Date, current.Ticker, current.Price, current.Signal, pnlCum, pnlDaily, pnlPerTrade, pnlDailyHold, pnlCumHold, activePosition));
+                pnlEntities.Add(PnlEntity.Build(current.Date, current.Ticker, current.Price, current.Signal, pnlCum, pnlDaily, pnlPerTrade, pnlDailyHold, pnlCumHold, totalNumTrades, activePosition));
 
                 if (exitingPosition) { ExitPosition(ref activePosition); }
             }               
@@ -187,8 +189,7 @@ namespace QuantBook.Models.Strategy
         private readonly PnlTradeType tradeType;
         private readonly DateTime dateIn;
         private readonly double priceIn;
-        private readonly double shares;
-        private int numTrades;
+        private readonly double shares;       
 
         public ActivePosition(PnlTradeType tradeType, DateTime dateIn, double priceIn, double shares)
         {
@@ -196,7 +197,6 @@ namespace QuantBook.Models.Strategy
             this.dateIn = dateIn;
             this.priceIn = priceIn;
             this.shares = shares;
-            this.numTrades = 1;
         }
 
         private  ActivePosition() {}
@@ -206,11 +206,8 @@ namespace QuantBook.Models.Strategy
         public double Shares => shares;
         public PnlTradeType TradeType => tradeType;
         public double PriceIn => priceIn;
-        public int NumTrades => numTrades;
         public DateTime DateIn => dateIn;
 
-
-        public void IncrementNumTrades() => numTrades++;
         public bool IsLongPosition() => TradeType == PnlTradeType.POSITION_LONG;
         public bool IsShortPosition() => TradeType == PnlTradeType.POSITION_SHORT;
 
@@ -222,13 +219,12 @@ namespace QuantBook.Models.Strategy
             return tradeType == other.tradeType &&
                     dateIn.Equals(other.dateIn) &&
                     priceIn == other.priceIn &&
-                    shares == other.shares &&
-                    numTrades == other.numTrades;
+                    shares == other.shares;
         }
 
         public override int GetHashCode()
         {
-            return new { tradeType, dateIn, priceIn, shares, numTrades }.GetHashCode();
+            return new { tradeType, dateIn, priceIn, shares }.GetHashCode();
         }    
     }
 

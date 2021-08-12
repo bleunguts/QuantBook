@@ -68,12 +68,13 @@ namespace QuantBook.Tests
                 var exitPosition = positions.Last();
                 Console.WriteLine($"Enter / Exit position found for {tradeType}");
                 Console.WriteLine($"Exit Position NumTrades={exitPosition.NumTrades}, PnlPerTrade={exitPosition.PnlPerTrade}, PnlCum={exitPosition.PnLCum}, PnlDaily={exitPosition.PnLDaily}, PnlCumHold={exitPosition.PnLCumHold}, PnlDailyHold={exitPosition.PnLDailyHold}");
-                Assert.That(enterPosition.NumTrades, Is.GreaterThan(0));                
+                Assert.That(enterPosition.NumTrades, Is.EqualTo(1).Or.EqualTo(3));                
                 Assert.That(exitPosition.PnlPerTrade, Is.GreaterThan(0));
                 Assert.That(exitPosition.PnLCum, Is.GreaterThan(0).Or.LessThan(0));
                 Assert.That(exitPosition.PnLDaily, Is.GreaterThan(0).Or.LessThan(0));
                 Assert.That(exitPosition.PnLCumHold, Is.GreaterThan(0));
                 Assert.That(exitPosition.PnLDailyHold, Is.GreaterThan(0).Or.LessThan(0));
+                Assert.That(exitPosition.NumTrades, Is.EqualTo(2).Or.EqualTo(4));
             }
         }        
 

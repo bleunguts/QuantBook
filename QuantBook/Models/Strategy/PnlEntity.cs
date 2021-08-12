@@ -12,16 +12,14 @@ namespace QuantBook.Models.Strategy
             return new PnlEntity(date, ticker, price, signal, 0.0, 0.0, 0.0, 0.0, 0.0, tradeType, null, null, 0);
         }
 
-        public static PnlEntity Build(DateTime date, string ticker, double price, double signal, double pnLCum, double pnLDaily, double pnlPerTrade, double pnlDailyHold, double pnlCumHold, ActivePosition activePosition)            
+        public static PnlEntity Build(DateTime date, string ticker, double price, double signal, double pnLCum, double pnLDaily, double pnlPerTrade, double pnlDailyHold, double pnlCumHold, int numTrades, ActivePosition activePosition)            
         {
-            int numTrades = 0;
             var tradeType = PnlTradeType.POSITION_NONE;
             DateTime? dateIn = null;
             double? priceIn = null;
 
             if (activePosition.IsActive)
             {
-                numTrades = activePosition.NumTrades;
                 tradeType = activePosition.TradeType;
                 priceIn = activePosition.PriceIn;
                 dateIn = activePosition.DateIn;
