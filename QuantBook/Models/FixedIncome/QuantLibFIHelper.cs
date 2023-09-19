@@ -647,7 +647,7 @@ namespace QuantBook.Models.FixedIncome
                     IborIndex swFloatingLegIndex = new USDLibor(new Period(3, TimeUnit.Months));
                     var period = ToPeriod(isdaRate.Tenor);
                     var rate = Convert.ToDouble(isdaRate.Rate);
-                    instruments.Add(new SwapRateHelper(rate, period, calendar, Frequency.Semiannual, BusinessDayConvention.Unadjusted, new Thirty360(), swFloatingLegIndex));
+                    instruments.Add(new SwapRateHelper(rate, period, calendar, Frequency.Semiannual, BusinessDayConvention.Unadjusted, new Thirty360(Thirty360.Thirty360Convention.USA), swFloatingLegIndex));
                 }
             }           
 

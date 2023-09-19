@@ -2,8 +2,9 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-	<TargetFramework>net481</TargetFramework>    
-	<UseWPF>true</UseWPF>
+	<TargetFramework>net472</TargetFramework>    
+	<UseWPF>true</UseWPF>    
+	<UserSecretsId>5db8aad4-9648-4871-88a4-86b5341cacdb</UserSecretsId>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -29,8 +30,8 @@
   <ItemGroup>
     <PackageReference Include="Caliburn.Micro" Version="2.0.2" />
     <PackageReference Include="EntityFramework" Version="6.4.4" />
-    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.31" />
-    <PackageReference Include="QLNet" Version="1.11.4" />
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.39" />
+    <PackageReference Include="QLNet" Version="1.13.0" />
     <PackageReference Include="Quandl.NET" Version="1.2.1" />
   </ItemGroup>
 
