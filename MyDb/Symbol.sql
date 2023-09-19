@@ -1,0 +1,8 @@
+﻿CREATE TABLE [dbo].[Symbol]
+(
+	[SymbolID] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+	[Ticker] NVARCHAR(50) NOT NULL,
+	[Region] NVARCHAR(50) NULL,
+	[Sector] NVARCHAR(150) NULL,
+	CONSTRAINT [UQ_Symbol_Ticker] UNIQUE (Ticker)
+)

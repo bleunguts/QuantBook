@@ -9,8 +9,9 @@ using System.Xml.Linq;
 namespace QuantBook.Models.Isda
 {
     public class IsdaHelper
-    {
-        private const string url_isda = "https://www.markit.com/news/InterestRates_{0}_{1}.zip";
+    {        
+        // https://rfr.ihsmarkit.com/InterestRates_USD_20230918.zip?email=zz_zzzz@yahoo.com
+        private const string url_isda = "https://rfr.ihsmarkit.com/InterestRates_{0}_{1}.zip?email=zz_zzzz@yahoo.com";
 
         public static BindableCollection<IsdaRate> GetIsdaRates(string currency, DateTime startDate, DateTime endDate, IEventAggregator events = null)
         {
@@ -89,13 +90,14 @@ namespace QuantBook.Models.Isda
                 return rates;
 
             XDocument doc = XDocument.Load(xfile);
-            XElement asof = doc.Root.Element("effectiveasof");
-            XElement badday = doc.Root.Element("baddayconvention");
+            var root = doc.Root.Element("interestRateCurve"); 
+            XElement asof = root.Element("effectiveasof");
+            XElement badday = root.Element("baddayconvention");
 
            
             //Process deposits:
-            XElement deposits = doc.Root.Element("deposits");
-            string dayConvention = deposits.Element("daycountconvention").Value;
+            XElement deposits = root.Element("ois");
+            string dayConvention = deposits.Element("fixeddaycountconvention").Value;
             string calendar = deposits.Element("calendars").Element("calendar").Value;
             string[] ss = deposits.Element("snaptime").Value.Split('T');
             string ts = ss[0] + " " + ss[1].Split('Z')[0];
@@ -122,37 +124,40 @@ namespace QuantBook.Models.Isda
             }
 
             //Process swaps:
-            XElement swaps = doc.Root.Element("swaps");
-            dayConvention = swaps.Element("floatingdaycountconvention").Value;
-            calendar = swaps.Element("calendars").Element("calendar").Value;
-            string fixDayConvention = swaps.Element("fixeddaycountconvention").Value;
-            ss = swaps.Element("snaptime").Value.Split('T');
-            ts = ss[0] + " " + ss[1].Split('Z')[0];
-            snapDate = Convert.ToDateTime(ts);
-            spotDate = swaps.Element("spotdate").Value;
-            string floatPay = swaps.Element("floatingpaymentfrequency").Value;
-            string fixPay = swaps.Element("fixedpaymentfrequency").Value;
-
-            foreach (var e in swaps.Elements())
+            if (root.Element("swaps") != null)
             {
-                if (e.Name.ToString() == "curvepoint")
+                XElement swaps = root.Element("swaps");
+                dayConvention = swaps.Element("floatingdaycountconvention").Value;
+                calendar = swaps.Element("calendars").Element("calendar").Value;
+                string fixDayConvention = swaps.Element("fixeddaycountconvention").Value;
+                ss = swaps.Element("snaptime").Value.Split('T');
+                ts = ss[0] + " " + ss[1].Split('Z')[0];
+                snapDate = Convert.ToDateTime(ts);
+                spotDate = swaps.Element("spotdate").Value;
+                string floatPay = swaps.Element("floatingpaymentfrequency").Value;
+                string fixPay = swaps.Element("fixedpaymentfrequency").Value;
+
+                foreach (var e in swaps.Elements())
                 {
-                    rates.Add(new IsdaRate
+                    if (e.Name.ToString() == "curvepoint")
                     {
-                        Currency = currency,
-                        EffectiveAsOf = asof.Value,
-                        BadDayConvention = badday.Value,
-                        Calendar = calendar,
-                        SnapTime = snapDate,
-                        SpotDate = spotDate,
-                        Maturity = e.Element("maturitydate").Value,
-                        DayCountConvention = dayConvention,
-                        FixedDayCountConvention = fixDayConvention,
-                        FloatingPaymentFrequency = floatPay,
-                        FixedPaymentFrequency = fixPay,
-                        Tenor = e.Element("tenor").Value,
-                        Rate = e.Element("parrate").Value
-                    });
+                        rates.Add(new IsdaRate
+                        {
+                            Currency = currency,
+                            EffectiveAsOf = asof.Value,
+                            BadDayConvention = badday.Value,
+                            Calendar = calendar,
+                            SnapTime = snapDate,
+                            SpotDate = spotDate,
+                            Maturity = e.Element("maturitydate").Value,
+                            DayCountConvention = dayConvention,
+                            FixedDayCountConvention = fixDayConvention,
+                            FloatingPaymentFrequency = floatPay,
+                            FixedPaymentFrequency = fixPay,
+                            Tenor = e.Element("tenor").Value,
+                            Rate = e.Element("parrate").Value
+                        });
+                    }
                 }
             }
 
