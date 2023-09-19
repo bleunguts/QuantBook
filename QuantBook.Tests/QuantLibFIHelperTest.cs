@@ -240,7 +240,7 @@ namespace QuantBook.Tests
         [TestCase(ResultType.MonthlyResults)]
         public void WhenCalculatingCdsHazardRatesUsingCreditSpreadCurveAsInput(ResultType resultType)
         {
-            var evalDate = new Date(20, 3, 2015);
+            var evalDate = new DateTime(2023, 8, 18);
 
             double[] spreads = new[] { 34.93, 53.60, 72.02, 106.39, 129.39, 139.46 }; // in basis points (need to divide 10_000)
             string[] tenors = new[] { "1Y", "2Y", "3Y", "5Y", "7Y", "10Y" };                  
@@ -324,8 +324,8 @@ namespace QuantBook.Tests
 
         [Test]
         public void WhenFetchingIsdaZeroCurve()
-        {
-            var evalDate = new Date(18, 3, 2015);
+        {            
+            var evalDate = new Date(18, 8, 2023);
             var referenceDate = evalDate - 3;
             var ccy = "USD";
             var termStructure = QuantLibFIHelper.IsdaZeroCurve(referenceDate, ccy);
@@ -337,10 +337,10 @@ namespace QuantBook.Tests
 
         [Test]
         public void WhenValuingCdsPV()
-        {
-            var evalDate = new Date(15, 6, 2009);
-            var effectiveDate = new Date(20, 3, 2009);
-            var maturity = new Date(20, 6, 2014);
+        {            
+            var evalDate = new Date(18, 8, 2023);
+            var effectiveDate = new Date(8, 8, 2023);
+            var maturity = new Date(18, 9, 2023);
             var ccy = "USD";
             var recoveryRate = 0.4;
             var tenors = new string[] { "5Y" };

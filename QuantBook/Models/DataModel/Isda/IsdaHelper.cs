@@ -65,6 +65,10 @@ namespace QuantBook.Models.Isda
 
             string url = string.Format(url_isda, currency, date.ToString("yyyyMMdd"));
             string zpath = @"..\..\Models\DataModel\Isda\Zip\";
+            if (!Directory.Exists(zpath))
+            {
+                Directory.CreateDirectory(zpath);
+            }
             string zfile = zpath + currency + "_" + date.ToString("yyyyMMdd") + ".zip";
 
             string xfile = zpath + "InterestRates_" + currency + "_" + date.ToString("yyyyMMdd") + ".xml";

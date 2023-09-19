@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.6.30114.105
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34024.191
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuantBook", "QuantBook\QuantBook.csproj", "{9C44146C-8F2C-4EB9-AFE8-5866E5B1FFD6}"
 EndProject
@@ -13,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuantBook.Tests", "QuantBook.Tests\QuantBook.Tests.csproj", "{DB369F4F-7D67-4160-BD04-24DF557AE391}"
+EndProject
+Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "MyDb", "MyDb\MyDb.sqlproj", "{D38F9933-748C-4E69-BA74-85BA10358B0F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -48,9 +50,30 @@ Global
 		{DB369F4F-7D67-4160-BD04-24DF557AE391}.Release|x64.Build.0 = Release|Any CPU
 		{DB369F4F-7D67-4160-BD04-24DF557AE391}.Release|x86.ActiveCfg = Release|Any CPU
 		{DB369F4F-7D67-4160-BD04-24DF557AE391}.Release|x86.Build.0 = Release|Any CPU
+		{D38F9933-748C-4E69-BA74-85BA10358B0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D38F9933-748C-4E69-BA74-85BA10358B0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D38F9933-748C-4E69-BA74-85BA10358B0F}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{D38F9933-748C-4E69-BA74-85BA10358B0F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D38F9933-748C-4E69-BA74-85BA10358B0F}.Debug|x64.Build.0 = Debug|Any CPU
+		{D38F9933-748C-4E69-BA74-85BA10358B0F}.Debug|x64.Deploy.0 = Debug|Any CPU
+		{D38F9933-748C-4E69-BA74-85BA10358B0F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D38F9933-748C-4E69-BA74-85BA10358B0F}.Debug|x86.Build.0 = Debug|Any CPU
+		{D38F9933-748C-4E69-BA74-85BA10358B0F}.Debug|x86.Deploy.0 = Debug|Any CPU
+		{D38F9933-748C-4E69-BA74-85BA10358B0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D38F9933-748C-4E69-BA74-85BA10358B0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D38F9933-748C-4E69-BA74-85BA10358B0F}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{D38F9933-748C-4E69-BA74-85BA10358B0F}.Release|x64.ActiveCfg = Release|Any CPU
+		{D38F9933-748C-4E69-BA74-85BA10358B0F}.Release|x64.Build.0 = Release|Any CPU
+		{D38F9933-748C-4E69-BA74-85BA10358B0F}.Release|x64.Deploy.0 = Release|Any CPU
+		{D38F9933-748C-4E69-BA74-85BA10358B0F}.Release|x86.ActiveCfg = Release|Any CPU
+		{D38F9933-748C-4E69-BA74-85BA10358B0F}.Release|x86.Build.0 = Release|Any CPU
+		{D38F9933-748C-4E69-BA74-85BA10358B0F}.Release|x86.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{D38F9933-748C-4E69-BA74-85BA10358B0F} = {8FF02F10-2211-437F-BF0A-2BD8FB161F60}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {98029587-7E19-42B9-87F6-ED29A032ABFA}

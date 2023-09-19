@@ -36,9 +36,9 @@ namespace QuantBook.Ch10
         }
         private void InitializeCds1()
         {
-            EvalDate = new DateTime(2009, 6, 15);
-            EffectiveDate = new DateTime(2009, 3, 20);
-            Maturity = new DateTime(2014, 6, 20);
+            EvalDate = new DateTime(2023, 8, 18);
+            EffectiveDate = new DateTime(2023, 8, 8);
+            Maturity = new DateTime(2023, 9, 18);
             Spreads = "10";
             Tenors = "5Y";
             RecoveryRate = 0.4;
@@ -49,9 +49,9 @@ namespace QuantBook.Ch10
 
         private void InitializeCds2()
         {
-            EvalDate = new DateTime(2015, 5, 15);
-            EffectiveDate = new DateTime(2015, 3, 20);
-            Maturity = new DateTime(2018, 6, 20);
+            EvalDate = new DateTime(2023, 8, 18);
+            EffectiveDate = new DateTime(2023, 8, 8);
+            Maturity = new DateTime(2023, 9, 18);
             Spreads = "34.93,53.60,72.02,106.39,129.39,139.46";
             Tenors = "1Y,2Y,3Y,5Y,7Y,10Y";
             RecoveryRate = 0.4;

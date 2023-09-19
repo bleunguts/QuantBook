@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>net481</TargetFramework>
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>
@@ -20,7 +20,7 @@
 
   <ItemGroup>
     <Reference Include="Chart3DControl">
-      <HintPath>..\..\Chart3DControl.dll</HintPath>
+      <HintPath>..\3rdParty\Chart3DControl.dll</HintPath>
     </Reference>
   </ItemGroup>
 

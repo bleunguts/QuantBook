@@ -67,6 +67,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Models\DataModel\Isda\Zip\Placeholder.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="StockTickers.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
