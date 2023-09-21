@@ -135,8 +135,8 @@ namespace QuantBook.Tests
         [Test]
         [TestCase(SignalTypeEnum.MovingAverage)]
         [TestCase(SignalTypeEnum.LinearRegression)]
-        [TestCase(SignalTypeEnum.RSI, Ignore = "Not Implemented")]
-        [TestCase(SignalTypeEnum.WilliamR, Ignore ="NotImplemented")]
+        [TestCase(SignalTypeEnum.RSI)]
+        [TestCase(SignalTypeEnum.WilliamR)]
         public async Task WhenComputingSignalUsingVariousProjectionTechniques(SignalTypeEnum signalType)
         {
             var startDate = new DateTime(2012, 3, 1);
@@ -152,8 +152,8 @@ namespace QuantBook.Tests
             foreach (var s in signals)
             {
                 Console.WriteLine($"Signal Data: {s}");
-                Assert.That(s.PricePredicted, Is.GreaterThan(0));
                 Assert.That(s.Signal, Is.GreaterThan(0).Or.LessThan(0));
+                Assert.That(s.PricePredicted, Is.GreaterThan(0));
                 Assert.That(s.LowerBand, Is.GreaterThan(0));
                 Assert.That(s.UpperBand, Is.GreaterThan(0));
             }

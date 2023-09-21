@@ -41,13 +41,95 @@ namespace QuantBook.Models.Strategy
 
         private static IEnumerable<SignalEntity> WilliamsRNormalized(IEnumerable<SignalEntity> input, int movingWindow)
         {
-            throw new NotImplementedException();
+            var results = new BindableCollection<SignalEntity>();
+            for (int i = movingWindow - 1; i < input.Count(); i++)
+            {
+                var temp = new List<SignalEntity>();
+                for(int j = i - movingWindow + 1; j <= i; j++) 
+                {
+                    temp.Add(input.ElementAt(j));
+                }
+
+                double price = input.ElementAt(i).Price;
+                double high = temp.Max(x => x.Price);
+                double low = temp.Min(x => x.Price);
+                // Formula is Signal = -4 * (highest high - Close) / (highest high - lowest low) + 2
+                var williamsRResult = -4.0 * (high - price) / (high - low) + 2.0;
+                results.Add(new SignalEntity
+                {
+                    Date = input.ElementAt(i).Date,
+                    Ticker = input.ElementAt(i).Ticker,
+                    Price = input.ElementAt(i).Price,
+                    PricePredicted = input.ElementAt(i).Price,
+                    UpperBand = input.ElementAt(i).Price,
+                    LowerBand = input.ElementAt(i).Price,
+                    Signal = williamsRResult,
+                });
+            }
+
+            return results;
         }
 
         private static IEnumerable<SignalEntity> RSINormalized(IEnumerable<SignalEntity> input, int movingWindow)
         {
-            throw new NotImplementedException();
+            var results = new BindableCollection<SignalEntity>();
+
+            for (int i = movingWindow - 1; i < input.Count(); i++)
+            {
+                results.Add(new SignalEntity
+                {
+                    Date = input.ElementAt(i).Date,
+                    Ticker = input.ElementAt(i).Ticker,
+                    Price = input.ElementAt(i).Price,
+                    PricePredicted = input.ElementAt(i).Price,
+                    UpperBand = input.ElementAt(i).Price,
+                    LowerBand = input.ElementAt(i).Price,
+                    Signal = (double)CalculateRSIFrom(i),
+                });
+            }
+            return results;
+
+            double CalculateRSIFrom(int index)
+            {                
+                var prices = input
+                    .Skip(index - (movingWindow - 1))
+                    .Take(movingWindow + 1)
+                    .Select(i => i.Price)
+                    .ToArray();             
+                return (double)CalculateRSI(prices);
+            }
         }
+
+        private static double CalculateRSI(double[] prices)
+        {
+            double sumGain = 0;
+            double sumLoss = 0;
+            for (int i = 1; i < prices.Length; i++)
+            {
+                double priceDiff = prices[i] - prices[i - 1];
+                if (priceDiff >= 0)
+                    sumGain += priceDiff;
+                else
+                    sumLoss -= priceDiff;
+            }
+            double rs = CalculateRS(sumGain, sumLoss);             
+
+            double rsi = 100.0 - 100.0 / (1.0 + rs);
+            return (rsi - 50.0) / 25.0;
+
+            double CalculateRS(double gains, double losses)
+            {                
+                if (gains == 0)
+                {
+                    return 0.0;
+                }
+                if (Math.Abs(losses) < 1.0e-15)
+                {
+                    return 100.0;
+                }                                
+                return gains / losses;                
+            }
+        }        
 
         private static IEnumerable<SignalEntity> LinearRegression(IEnumerable<SignalEntity> raw, int movingWindow)
         {
