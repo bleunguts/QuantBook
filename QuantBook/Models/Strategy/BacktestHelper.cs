@@ -11,7 +11,13 @@ namespace QuantBook.Models.Strategy
 
     public class BacktestHelper
     {   
-        public static IEnumerable<PnlEntity> ComputeLongShortPnl(IEnumerable<SignalEntity> inputSignals, double notional, double signalIn, double signalOut, StrategyTypeEnum strategyType, bool isReinvest)
+        public static IEnumerable<PnlEntity> ComputeLongShortPnl(
+            IEnumerable<SignalEntity> inputSignals, 
+            double notional, // initial invest capital
+            double signalIn, 
+            double signalOut, 
+            StrategyTypeEnum strategyType, 
+            bool isReinvest)
         {       
             ActivePosition activePosition = ActivePosition.INACTIVE;
             var signals = new List<SignalEntity>(inputSignals);
@@ -145,18 +151,33 @@ namespace QuantBook.Models.Strategy
             return result;
         }
 
+        /// <summary>
+        /// Sharpe ratio is a risk measure used to determine return of the strategy above risk free rate
+        /// It average of daily returns divided by standard deviation of the daily returns        
+        /// </summary>        
         public static double[] GetSharpe(List<PnlEntity> pnl)
         {
+
+            // computes annualized sharpe ratio by taking int account daily P&L from the strategy and from the buying-and-holding of position
             double avg = pnl.Average(x => x.PnLDaily);
             double std = pnl.StdDev(x => x.PnLDaily);
+
+            // buying and holding of position
             double avg1 = pnl.Average(x => x.PnLDailyHold);
             double std1 = pnl.StdDev(x => x.PnLDailyHold);
+
             double sp = Math.Round(Math.Sqrt(252.0) * avg / std, 4);
             double sp1 = Math.Round(Math.Sqrt(252.0) * avg1 / std1, 4);
 
+            // shows how your strategy performs each year 
             return new[] { sp, sp1 };
         }
 
+        /// <summary>
+        /// A percentage of maximum drawdown 
+        /// in a stable market, drawdown contracts are cheaper
+        /// in a bubble market, drawdown will be huge
+        /// </summary>        
         public static List<DrawDownResult> GetDrawDown(List<PnlEntity> pnlInput, double notional)
         {
             var results = new List<DrawDownResult>();
@@ -181,118 +202,6 @@ namespace QuantBook.Models.Strategy
             }
 
             return results;
-        }
-    }
-
-    public class ActivePosition 
-    {
-        private readonly PnlTradeType tradeType;
-        private readonly DateTime dateIn;
-        private readonly double priceIn;
-        private readonly double shares;       
-
-        public ActivePosition(PnlTradeType tradeType, DateTime dateIn, double priceIn, double shares)
-        {
-            this.tradeType = tradeType;
-            this.dateIn = dateIn;
-            this.priceIn = priceIn;
-            this.shares = shares;
-        }
-
-        private  ActivePosition() {}
-
-        public bool IsActive => !Equals(INACTIVE);
-     
-        public double Shares => shares;
-        public PnlTradeType TradeType => tradeType;
-        public double PriceIn => priceIn;
-        public DateTime DateIn => dateIn;
-
-        public bool IsLongPosition() => TradeType == PnlTradeType.POSITION_LONG;
-        public bool IsShortPosition() => TradeType == PnlTradeType.POSITION_SHORT;
-
-        public static ActivePosition INACTIVE = new ActivePosition();
-        public override bool Equals(object rhs)
-        {
-            var other = (ActivePosition)rhs;
-            if (other == null) return false;
-            return tradeType == other.tradeType &&
-                    dateIn.Equals(other.dateIn) &&
-                    priceIn == other.priceIn &&
-                    shares == other.shares;
-        }
-
-        public override int GetHashCode()
-        {
-            return new { tradeType, dateIn, priceIn, shares }.GetHashCode();
-        }    
-    }
-
-    public struct DrawDownResult
-    {
-        public DateTime date;
-        public double pnl;
-        public double drawdown;
-        public double drawup;
-        public double pnlHold;
-        public double drawdownHold;
-        public double drawupHold;
-
-        public DrawDownResult(DateTime date, double pnl, double drawdown, double drawup, double pnlHold, double drawdownHold, double drawupHold)
-        {
-            this.date = date;
-            this.pnl = pnl;
-            this.drawdown = drawdown;            
-            this.drawup = drawup;            
-            this.pnlHold = pnlHold;
-            this.drawdownHold = drawdownHold;
-            this.drawupHold = drawupHold;         
-        }
-
-        public override bool Equals(object obj)
-        {
-            return obj is DrawDownResult other &&
-                   date == other.date &&
-                   pnl == other.pnl &&
-                   drawdown == other.drawdown &&
-                   drawup == other.drawup &&
-                   pnlHold == other.pnlHold &&
-                   drawdownHold == other.drawdownHold &&
-                   drawupHold == other.drawupHold;
-        }
-
-        public override int GetHashCode()
-        {
-            int hashCode = 1211010681;
-            hashCode = hashCode * -1521134295 + date.GetHashCode();
-            hashCode = hashCode * -1521134295 + pnl.GetHashCode();
-            hashCode = hashCode * -1521134295 + drawdown.GetHashCode();
-            hashCode = hashCode * -1521134295 + drawup.GetHashCode();
-            hashCode = hashCode * -1521134295 + pnlHold.GetHashCode();
-            hashCode = hashCode * -1521134295 + drawdownHold.GetHashCode();
-            hashCode = hashCode * -1521134295 + drawupHold.GetHashCode();
-            return hashCode;
-        }
-
-        public void Deconstruct(out DateTime date, out double pnl, out double drawdown, out double drawup, out double pnlHold, out double drawdownHold, out double drawupHold)
-        {
-            date = this.date;
-            pnl = this.pnl;
-            drawdown = this.drawdown;
-            drawup = this.drawup;
-            pnlHold = this.pnlHold;
-            drawdownHold = this.drawdownHold;
-            drawupHold = this.drawupHold;
-        }
-
-        //public static implicit operator (DateTime date, double pnl, double drawdown, double drawup, double maxDrawup, double pnlHold, double drawdownHold, double drawupHold)(DrawDownResult value)
-        //{
-        //    return (value.date, value.pnl, value.drawdown, value.drawup, value.pnlHold, value.drawdownHold, value.drawupHold);
-        //}
-
-        public static implicit operator DrawDownResult((DateTime date, double pnl, double drawdown, double drawup, double pnlHold, double drawdownHold, double drawupHold) value)
-        {
-            return new DrawDownResult(value.date, value.pnl, value.drawdown, value.drawup, value.pnlHold, value.drawdownHold, value.drawupHold);
         }
     }
 }

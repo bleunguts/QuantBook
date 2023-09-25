@@ -52,12 +52,13 @@ namespace QuantBook.Models.Strategy
         public virtual PnlTradeType TradeType { get; set; }
         public virtual DateTime? DateIn { get; set; }
         public virtual double? PriceIn { get; set; }
+
         public virtual int NumTrades { get; set; }
         public virtual double PnlPerTrade { get; set; }
-        public virtual double PnLDaily { get; set; }
+        public virtual double PnLDaily { get; set; }        
+        public virtual double PnLCum { get; set; }
         public virtual double PnLDailyHold { get; set; }
         public virtual double PnLCumHold { get; set; }
-        public virtual double PnLCum { get; set; }
 
         public override string ToString()
         {
