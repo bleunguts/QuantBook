@@ -7,7 +7,7 @@ namespace QuantBook.Models.AnalysisModel
 {
     public static class LinearAnalysisHelper
     {
-        public static SimpleLinearResult GetSimpleRegression<T>(BindableCollection<T> collection, string xField, string yField)
+        public static SimpleLinearResult GetSimpleRegression<T>(IEnumerable<T> collection, string xField, string yField)
         {
             List<double> xl = new List<double>();
             List<double> yl = new List<double>();

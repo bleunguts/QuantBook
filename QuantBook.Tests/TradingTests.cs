@@ -1,6 +1,7 @@
 ﻿using Caliburn.Micro;
 using Moq;
 using NUnit.Framework;
+using QLNet;
 using QuantBook.Models.Strategy;
 using System;
 using System.Collections.Generic;
@@ -169,6 +170,87 @@ namespace QuantBook.Tests
             data.ToList().ForEach(s => Console.WriteLine($"Raw Data: {s}"));                       
         }
 
+        [Test]
+        public void WhenGettingPairCorrelationItShouldReturnValidBetas()
+        {
+            double[] betas = new double[] { };
+            var startDate = DateTime.Now;
+            var endDate = DateTime.Now.AddDays(20); 
+
+            var signals = SignalHelper.GetPairCorrelation("aTicker1", "aTicker2", startDate, endDate, 0, out betas);
+
+            Assert.That(betas.Length, Is.GreaterThan(1));   
+            Assert.That(signals.Count, Is.GreaterThan(0));
+        }
+        [Test]
+        public void WhenGettingPairPriceRatioForEmptyInputSignals()
+        {
+            Assert.That(SignalHelper.GetPairPriceRatioSignal(new PairSignalEntity[] { }, 10), Is.EqualTo(Enumerable.Empty<PairSignalEntity>()));
+        }
+        [Test]
+        public void WhenGettingPairPriceRatio()
+        {
+            var builder = new PairSignalBuilder();
+            PairSignalEntity[] inputPairSignals = new[]
+            {
+                builder.NewSignal(1.1, 5.0),
+                builder.NewSignal(1.0, 5.0),
+                builder.NewSignal(1.2, 4.0),
+                builder.NewSignal(1.0, 5.0),
+                builder.NewSignal(1.3, 4.0),
+            };
+            int movingWindow = 3;
+            var pairSignals = new List<PairSignalEntity>(SignalHelper.GetPairPriceRatioSignal(inputPairSignals, movingWindow));
+
+            Console.WriteLine("inputs:");
+            Print(inputPairSignals);
+            Console.WriteLine("results:");
+            Print(pairSignals);
+
+            Assert.That(pairSignals.Count, Is.EqualTo(3));
+            foreach(var signal in pairSignals)
+            {
+                Assert.That(signal, Is.Not.EqualTo(0));
+            }
+        }
+     
+        [Test]
+        public void WhenGettingPairSpreads()
+        {
+            var builder = new PairSignalBuilder();            
+            PairSignalEntity[] inputPairSignals = new[]
+            {
+                builder.NewSignal(1.0, 2.0),
+                builder.NewSignal(3.0, 1.0),
+                builder.NewSignal(15.0, 2.0),
+                builder.NewSignal(1.0, 3.0),
+                builder.NewSignal(5.0, 2.0),            
+            };
+            int movingWindow = 3;
+            var pairSignals = new List<PairSignalEntity>(SignalHelper.GetPairSpreadSignal(inputPairSignals, movingWindow));
+
+            Console.WriteLine("inputs:");
+            Print(inputPairSignals);
+            Console.WriteLine("results:");
+            Print(pairSignals);
+
+            Assert.That(pairSignals.Count, Is.EqualTo(3));
+            foreach (var signal in pairSignals)
+            {
+                Assert.That(signal, Is.Not.EqualTo(0));
+            }
+        }
         #endregion
+
+        private static void Print(IEnumerable<PairSignalEntity> signals)
+        {
+            foreach (var signal in signals)
+            {
+                Console.WriteLine(signal);
+            }
+        }
+
+        private Random random = new Random();
+        private double RandomPrice() => random.Next(0, 99) + random.NextDouble();
     }
 }

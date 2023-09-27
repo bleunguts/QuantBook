@@ -1,4 +1,5 @@
 ﻿using Caliburn.Micro;
+using QLNet;
 using QuantBook.Ch11;
 using QuantBook.Models.DataModel.Quandl;
 using System;
@@ -9,18 +10,6 @@ using System.Threading.Tasks;
 
 namespace QuantBook.Models.Strategy
 {
-    public enum PriceTypeEnum {
-        TypicalPrice,
-        Close,
-        Average
-    }
-    public enum SignalTypeEnum {
-        MovingAverage,
-        LinearRegression,
-        RSI,
-        WilliamR
-    }
-
     public class SignalHelper
     {
         public static IEnumerable<SignalEntity> GetSignal(IEnumerable<SignalEntity> input, int movingWindow, SignalTypeEnum signalType)
@@ -45,7 +34,7 @@ namespace QuantBook.Models.Strategy
             for (int i = movingWindow - 1; i < input.Count(); i++)
             {
                 var temp = new List<SignalEntity>();
-                for(int j = i - movingWindow + 1; j <= i; j++) 
+                for (int j = i - movingWindow + 1; j <= i; j++)
                 {
                     temp.Add(input.ElementAt(j));
                 }
@@ -90,12 +79,12 @@ namespace QuantBook.Models.Strategy
             return results;
 
             double CalculateRSIFrom(int index)
-            {                
+            {
                 var prices = input
                     .Skip(index - (movingWindow - 1))
                     .Take(movingWindow + 1)
                     .Select(i => i.Price)
-                    .ToArray();             
+                    .ToArray();
                 return (double)CalculateRSI(prices);
             }
         }
@@ -112,13 +101,13 @@ namespace QuantBook.Models.Strategy
                 else
                     sumLoss -= priceDiff;
             }
-            double rs = CalculateRS(sumGain, sumLoss);             
+            double rs = CalculateRS(sumGain, sumLoss);
 
             double rsi = 100.0 - 100.0 / (1.0 + rs);
             return (rsi - 50.0) / 25.0;
 
             double CalculateRS(double gains, double losses)
-            {                
+            {
                 if (gains == 0)
                 {
                     return 0.0;
@@ -126,10 +115,10 @@ namespace QuantBook.Models.Strategy
                 if (Math.Abs(losses) < 1.0e-15)
                 {
                     return 100.0;
-                }                                
-                return gains / losses;                
+                }
+                return gains / losses;
             }
-        }        
+        }
 
         private static IEnumerable<SignalEntity> LinearRegression(IEnumerable<SignalEntity> raw, int movingWindow)
         {
@@ -197,14 +186,14 @@ namespace QuantBook.Models.Strategy
         }
 
         public static async Task<IEnumerable<SignalEntity>> GetStockData(string ticker, DateTime startDate, DateTime endDate, PriceTypeEnum priceType)
-        {       
+        {
             var data = await MarketData.GetStockData(ticker, startDate, endDate);
             var signals = new List<SignalEntity>();
 
-            foreach(var p in data)
+            foreach (var p in data)
             {
                 double price = (double)p.AdjClose;
-                switch(priceType)
+                switch (priceType)
                 {
                     case PriceTypeEnum.Close:
                         price = (double)p.AdjClose;
@@ -226,6 +215,98 @@ namespace QuantBook.Models.Strategy
             return signals;
         }
 
-       
-    }      
+        public static IEnumerable<PairSignalEntity> GetPairCorrelation(string ticker1, string ticker2, DateTime startDate, DateTime endDate, int correlationWindow, out double[] betas)
+        {
+            var builder = new PairSignalBuilder();
+            builder.Ticker1 = ticker1;
+            builder.Ticker2 = ticker2;  
+
+            var results = new List<PairSignalEntity>();
+            for (int i = 0; i < 100; i++)
+            {
+                results.Add(builder.NewSignal(RandomPrice(), RandomPrice()));
+            };
+            betas = new[] { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+            return results;
+        }
+        
+        private static double RandomPrice() 
+        {
+            Random random = new Random(Guid.NewGuid().GetHashCode());
+            return random.Next(1, 99) + random.NextDouble();
+        }
+
+        internal static IEnumerable<PairSignalEntity> GetPairSignal(PairTypeEnum selectedPairType, PairSignalEntity[] pairSignalEntities, int movingWindow)
+        {
+            if(selectedPairType == PairTypeEnum.PriceRatio)
+            {
+                return GetPairPriceRatioSignal(pairSignalEntities, movingWindow);
+            }
+            else
+            {
+                return GetPairSpreadSignal(pairSignalEntities, movingWindow);
+            }
+        }
+
+        internal static IEnumerable<PairSignalEntity> GetPairPriceRatioSignal(PairSignalEntity[] inputPairSignals, int movingWindow)
+        {
+            if (inputPairSignals.Length < 1)
+            {
+                return Enumerable.Empty<PairSignalEntity>();
+            }
+
+            var results = new List<PairSignalEntity>();
+            for (int i = movingWindow - 1; i < inputPairSignals.Length; i++)
+            {
+                var signalsInWindow = inputPairSignals
+                    .Skip(i - movingWindow + 1)
+                    .Take(movingWindow - 1)
+                    .ToList();
+                double zscore = zScore(inputPairSignals[i].Spread, (double)signalsInWindow.Average(x => x.Spread), (double)signalsInWindow.StdDev(x => x.Spread));
+                results.Add(new PairSignalEntity(inputPairSignals[i].Ticker1, inputPairSignals[i].Ticker2, inputPairSignals[i].Date, inputPairSignals[i].Price1, inputPairSignals[i].Price2, inputPairSignals[i].Correlation, inputPairSignals[i].Beta, zscore));                
+            }
+            return results;
+        }        
+
+        internal static IEnumerable<PairSignalEntity> GetPairSpreadSignal(PairSignalEntity[] inputPairSignals, int movingWindow)
+        {
+            if (inputPairSignals.Length < 1)
+            {
+                return Enumerable.Empty<PairSignalEntity>();
+            }
+
+            var results = new List<PairSignalEntity>();
+            for (int i = movingWindow - 1; i < inputPairSignals.Length; i++)
+            {
+                var xa = inputPairSignals
+                    .Skip(i - movingWindow + 1)
+                    .Take(movingWindow - 1)
+                    .Select(x => x.Price1)
+                    .ToList();
+                var ya = inputPairSignals
+                    .Skip(i - movingWindow + 1)
+                    .Take(movingWindow - 1)
+                    .Select(x => x.Price2)
+                    .ToList();
+                var lr = AnalysisModel.LinearAnalysisHelper.GetSimpleRegression(ya, xa);
+                double spread = Spread(xa[xa.Count - 1], ya[ya.Count - 1], lr.Beta);                
+                double[] spreads = new double[xa.Count];
+                for (int ii = 0; ii < xa.Count; ii++)
+                {                   
+                    spreads[ii] = Spread(xa[ii], ya[ii], lr.Beta);
+                }
+                double[] avgStd = ModelHelper.GetAvgStd(spreads);
+                double zscore = zScore(spread, avgStd[0], avgStd[1]);
+                results.Add(new PairSignalEntity(inputPairSignals[i].Ticker1, inputPairSignals[i].Ticker2, inputPairSignals[i].Date, inputPairSignals[i].Price1, inputPairSignals[i].Price2, inputPairSignals[i].Correlation, inputPairSignals[i].Beta, zscore));
+            }
+
+            return results;
+        }
+
+        static double Spread(double price1, double price2, double beta) => price1 - beta * price2;
+
+        static double zScore(double spread, double avg, double std) => (spread - avg) / std;
+
+      
+    }
 }

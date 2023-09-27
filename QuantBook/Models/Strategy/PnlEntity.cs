@@ -45,6 +45,19 @@ namespace QuantBook.Models.Strategy
             PriceIn = priceIn;
         }
 
+        public PnlEntity(string ticker, DateTime date, double signal, int numTrades, double pnlPerTrade, double pnlDaily, double pnlCum, double pnlDailyHold, double pnlCumHold)
+        {
+            Date = date;
+            Ticker = ticker;
+            Signal = signal;
+            NumTrades = numTrades;
+            PnlPerTrade = pnlPerTrade;
+            PnLCum = pnlCum;
+            PnLDaily = pnlDaily;
+            PnLDailyHold = pnlDailyHold;
+            PnLCumHold = pnlCumHold;
+        }
+
         public virtual string Ticker { get; set; }
         public virtual DateTime Date { get; set; }
         public virtual double Price { get; set; }

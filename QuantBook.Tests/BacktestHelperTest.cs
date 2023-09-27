@@ -1,16 +1,15 @@
-﻿using Caliburn.Micro;
-using Moq;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using QuantBook.Models.Strategy;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace QuantBook.Tests
 {
-    public class BacktestHelperTest
+    public partial class BacktestHelperTest
     {
         const double notional = 10_000.0;
         const double signalIn = 2;
@@ -134,41 +133,23 @@ namespace QuantBook.Tests
             (int enterTradeIndex, int exitTradeIndex) = ToTrades(pnlEntities, PnlTradeType.POSITION_SHORT);
             PrintStrategy(pnlEntities, enterTradeIndex, exitTradeIndex);
         }
-
         [Test]
-        public void WhenGettingOptimResultsWithVariousWindowSizes()
+        public void Foo()
         {
-            var builder = new SignalBuilder(startDate);
-            var signals = new List<SignalEntity>
+            PairSignalBuilder builder = new PairSignalBuilder();
+            PairSignalEntity[] inputSignalEntities = new[]
             {
-                builder.NewSignal(15.5),
-                builder.NewSignal(-1.1),  // enters short trade (prevSignal > 2)
-                builder.NewSignal(-0.1),  // [shouldnot] enter long trade (prevSignal < -2) 
-                builder.NewSignal(0.1),
-                builder.NewSignal(0.4),
-                builder.NewSignal(0.8),
-                builder.NewSignal(0.7),
-                builder.NewSignal(0.1),
-                builder.NewSignal(0.4),
-                builder.NewSignal(0.3),
-                builder.NewSignal(0.9),
-                builder.NewSignal(-10.1),
-                builder.NewSignal(0.1)    // exit short trade (prevSignal < -3) 
+                builder.NewSignal(2.0, 3.5),
+                builder.NewSignal(4.0, 5.5),
+                builder.NewSignal(7.0, 3.5),
+                builder.NewSignal(5.0, 2.5),
+                builder.NewSignal(9.0, 5.5),
             };
-            IEventAggregator events = new EventAggregator();
-            var results = OptimHelper.OptimSingleName(signals, SignalTypeEnum.MovingAverage, StrategyTypeEnum.MeanReversion, false, modelEvents => Console.WriteLine(string.Join(Environment.NewLine,modelEvents.EventList)));
-            foreach(var result in results)
-            {
-                Console.WriteLine($"ticker={result.ticker}, bar={result.bar}, zin={result.zin}, zout{result.zout}, sharpe={result.sharpe}, pnlcum={result.pnlCum}, numTrades={result.numTrades}");
-                Assert.That(result.ticker, Is.EqualTo("aTicker"));
-                Assert.That(result.bar, Is.GreaterThan(0));
-                Assert.That(result.zin, Is.GreaterThan(0));
-                Assert.That(result.zout, Is.GreaterThanOrEqualTo(0));
-                Assert.That(result.sharpe, Is.GreaterThan(0).Or.LessThan(0));
-                Assert.That(result.pnlCum, Is.GreaterThan(0).Or.LessThan(0));
-                Assert.That(result.numTrades, Is.GreaterThan(0));
-            }
-            
+
+            (IEnumerable<PairPnlEntity> pairEntities, IEnumerable<PnlEntity> pnlEntities) = BacktestHelper.ComputePnLPair(inputSignalEntities, 100, 0.0, 2.0, 1.3);
+
+            Assert.That(pairEntities.Count, Is.GreaterThan(0));
+            Assert.That(pnlEntities.Count, Is.GreaterThan(0));
         }
 
         private static (int enterTradeIndex, int exitTradeIndex) ToTrades(List<PnlEntity> pnlEntities, PnlTradeType pnlTradeType)
@@ -188,47 +169,6 @@ namespace QuantBook.Tests
                 PnlEntity p = pnlEntities[i];
                 //{0:0.##}
                 Console.WriteLine($"{p.Date.ToShortDateString()},Price={p.Price:0.##},Signal={p.Signal:0.##},PnlPerTrade={p.PnlPerTrade:0.##},PnlDaily={p.PnLDaily:0.##},PnlCum={p.PnLCum:0.##},PnlDailyHold={p.PnLDailyHold:0.##},PnlCumHold={p.PnLCumHold:0.##}");
-            }
-        }
-
-        class SignalBuilder
-        {
-            private readonly double basePrice;
-            private readonly Func<double, double> randomizer;
-            private DateTime currentDate;
-            private readonly string ticker = "aTicker";
-            private static Random random = new Random();
-
-            public SignalBuilder(DateTime date) : this(date, null, 1.5) { }
-            public SignalBuilder(DateTime date, Func<double, double> randomFunction, double basePrice)
-            {
-                this.currentDate = date;
-                this.basePrice = basePrice;
-                randomizer = randomFunction ?? new Func<double, double>(RandomPrice);
-            }
-
-            public SignalEntity NewSignal(double signal)
-            {
-                var entity = new Mock<SignalEntity>();
-                entity.SetupGet(x => x.Date).Returns(currentDate);
-                var price = randomizer(basePrice);
-                entity.SetupGet(x => x.Price).Returns(price);
-                entity.SetupGet(x => x.Signal).Returns(signal);
-                entity.SetupGet(x => x.Ticker).Returns(ticker);
-
-                MoveNext();
-                return entity.Object;
-            }
-
-            private void MoveNext()
-            {
-                currentDate = currentDate.AddDays(1);
-            }
-
-            static double RandomPrice(double basePrice)
-            {
-                int multiplier = random.Next(0, 1) == 0 ? -1 : 1;                
-                return basePrice + random.NextDouble() * multiplier;
             }
         }
     }

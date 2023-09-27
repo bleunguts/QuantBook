@@ -22,21 +22,32 @@ namespace QuantBook.Ch11
         public SingleNameOptimViewModel(IEventAggregator events)
         {
             this.events = events;
-            DisplayName = "02. Optimization";
-            LineSeriesCollection1 = new BindableCollection<Series>();
-            LineSeriesCollection2 = new BindableCollection<Series>();
-            SignalCollection = new BindableCollection<SignalEntity>();
-            PnLCollection = new BindableCollection<PnlEntity>();
-            StartDate = new DateTime(2010, 1, 3);
-            EndDate = new DateTime(2015, 12, 31);
+            DisplayName = "02. Optimization";                                    
         }
 
-        public BindableCollection<Series> LineSeriesCollection1 { get; set; }
-        public BindableCollection<Series> LineSeriesCollection2 { get; set; }
-        public BindableCollection<SignalEntity> SignalCollection { get; set; }
-        public BindableCollection<PnlEntity> PnLCollection { get; set; }        
-
         private string ticker = "IBM";
+        private DateTime startDate = new DateTime(2010, 1, 3);
+        private DateTime endDate = new DateTime(2015, 12, 31);
+        private IEnumerable<PriceTypeEnum> priceType;
+        private PriceTypeEnum selectedPriceType;
+        private IEnumerable<SignalTypeEnum> signalType;
+        private SignalTypeEnum selectedSignalType;
+        private IEnumerable<StrategyTypeEnum> strategyType;
+        private StrategyTypeEnum selectedStrategyType;
+        private string title1 = string.Empty;
+        private string title2 = string.Empty;
+        private string yLabel1;
+        private string yLabel2;
+        private DataTable yearlyPnLTable;
+        private DataTable optimTable;
+        private bool isReinvest = false;
+        DataTable drawdownTable = new DataTable();
+
+        #region properties
+        public BindableCollection<Series> LineSeriesCollection1 { get; set; } = new BindableCollection<Series>();
+        public BindableCollection<Series> LineSeriesCollection2 { get; set; } = new BindableCollection<Series>();
+        public BindableCollection<SignalEntity> SignalCollection { get; set; } = new BindableCollection<SignalEntity>();            
+        public BindableCollection<PnlEntity> PnLCollection { get; set; } = new BindableCollection<PnlEntity>();
 
         public string Ticker
         {
@@ -44,125 +55,83 @@ namespace QuantBook.Ch11
             set { ticker = value; NotifyOfPropertyChange(() => Ticker); }
         }
 
-        private DateTime startDate;
-
         public DateTime StartDate
         {
             get { return startDate; }
             set { startDate = value;  NotifyOfPropertyChange(() => StartDate); }
         }
-
-        private DateTime endDate;
-
         public DateTime EndDate
         {
             get { return endDate; }
             set { endDate = value; NotifyOfPropertyChange(() => EndDate); }
         }
-
-        private IEnumerable<PriceTypeEnum> priceType;
-
         public IEnumerable<PriceTypeEnum> PriceType
         {
             get { return Enum.GetValues(typeof(PriceTypeEnum)).Cast<PriceTypeEnum>(); }
             set { priceType = value; NotifyOfPropertyChange(() => PriceType); }
         }
-
-        private PriceTypeEnum selectedPriceType;
-
         public PriceTypeEnum SelectedPriceType
         {
             get { return selectedPriceType; }
             set { selectedPriceType = value; NotifyOfPropertyChange(() => SelectedPriceType); }
         }
-
-        private IEnumerable<SignalTypeEnum> signalType;
-
         public IEnumerable<SignalTypeEnum> SignalType
         {
             get { return Enum.GetValues(typeof(SignalTypeEnum)).Cast<SignalTypeEnum>(); }
             set { signalType = value; NotifyOfPropertyChange(() => SignalType); }
         }
-
-        private SignalTypeEnum selectedSignalType;
-
         public SignalTypeEnum SelectedSignalType
         {
             get { return selectedSignalType; }
             set { selectedSignalType = value; NotifyOfPropertyChange(() => SelectedSignalType); }
         }
-
-
-        private IEnumerable<StrategyTypeEnum> strategyType;
-
         public IEnumerable<StrategyTypeEnum> StrategyType
         {
             get { return Enum.GetValues(typeof(StrategyTypeEnum)).Cast<StrategyTypeEnum>(); }
             set { strategyType = value; NotifyOfPropertyChange(() => StrategyType); }
         }
-
-        private StrategyTypeEnum selectedStrategyType;
-
         public StrategyTypeEnum SelectedStrategyType
         {
             get { return selectedStrategyType; }
             set { selectedStrategyType = value; NotifyOfPropertyChange(() => SelectedStrategyType); }
         }
-
-        private bool isReinvest = false;
-
         public bool IsReinvest
         {
             get { return isReinvest; }
             set { isReinvest = value; NotifyOfPropertyChange(() => IsReinvest); }
         }
-        private string title1 = string.Empty;
-
         public string Title1
         {
             get { return title1; }
             set { title1 = value; NotifyOfPropertyChange(() => Title1); }
         }
-
-        private string title2 = string.Empty;
-
         public string Title2
         {
             get { return title2; }
             set { title2 = value; NotifyOfPropertyChange(() => Title2); }
         }
-
-        private string yLabel1;
-
         public string YLabel1
         {
             get { return yLabel1; }
             set { yLabel1 = value; NotifyOfPropertyChange(() => YLabel1); }
         }
 
-        private string yLabel2;
-
         public string YLabel2
         {
             get { return yLabel2; }
             set { yLabel2 = value; NotifyOfPropertyChange(() => YLabel2); }
         }
-
-        private DataTable yearlyPnLTable;
-
         public DataTable YearlyPnLTable
         {
             get { return yearlyPnLTable; }
             set { yearlyPnLTable = value; NotifyOfPropertyChange(() => YearlyPnLTable); }
         }
-
-        private DataTable optimTable;
-
         public DataTable OptimTable
         {
             get { return optimTable; }
             set { optimTable = value; NotifyOfPropertyChange(() => OptimTable); }
         }
+        #endregion 
 
         public async void StartOptim()
         {
@@ -201,12 +170,7 @@ namespace QuantBook.Ch11
                     table.Rows.Add(row.ticker, row.bar, row.zin, row.zout, row.numTrades, row.pnlCum, row.sharpe);
                 }
             }
-        }
-
-        
-
-        DataTable drawdownTable = new DataTable();
-
+        }       
         public async void SelectedCellChanged(object sender, SelectedCellsChangedEventArgs e)
         {
             await Task.Run(async () =>
@@ -272,17 +236,14 @@ namespace QuantBook.Ch11
                 AddPnLCharts();
             });
         }
-
         public void PlotPnL()
         {
             AddPnLCharts();
             Drawdown(true);
         }
-
         public void PlotPrice() => AddSignalCharts();
         public void DrawdownStrategy() => Drawdown(true);
         public void DrawdownHold() => Drawdown(false);
-
         private void AddSignalCharts()
         {
             Title1 = $"{Ticker}: Stock Price (Price Type = {SelectedPriceType}, Signal Type = {SelectedSignalType})";
@@ -350,7 +311,6 @@ namespace QuantBook.Ch11
             }
             LineSeriesCollection2.Add(ds);
         }
-
         private void AddPnLCharts()
         {
             DataRow latestPnlRow = YearlyPnLTable.Rows[YearlyPnLTable.Rows.Count - 1];

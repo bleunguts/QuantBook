@@ -152,7 +152,7 @@ namespace QuantBook.Models
             {
                 // Creates and opens an ODBC connection
                 string strConnString = "Driver={Microsoft Text Driver (*.txt; *.csv)};Dbq=" + dirCSV.Trim() + ";Extensions=asc,csv,tab,txt;Persist Security Info=False";
-                strConnString = "Driver={Microsoft Access Text Driver (*.txt, *.csv)};Dbq=" + dirCSV.Trim() + ";Extensions=asc,csv,tab,txt;Persist Security Info=False";
+                       //strConnString = "Driver={Microsoft Access Text Driver (*.txt, *.csv)};Dbq=" + dirCSV.Trim() + ";Extensions=asc,csv,tab,txt;Persist Security Info=False";
                 string sql_select;
                 OdbcConnection conn;
                 conn = new OdbcConnection(strConnString.Trim());

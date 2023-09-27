@@ -3,6 +3,7 @@ using QuantBook.Ch11;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Entity.ModelConfiguration.Conventions;
 using System.Linq;
 
 namespace QuantBook.Models.Strategy
@@ -202,6 +203,44 @@ namespace QuantBook.Models.Strategy
             }
 
             return results;
+        }
+
+        public static (IEnumerable<PairPnlEntity> pairEntities, IEnumerable<PnlEntity> pnlEntities) ComputePnLPair(PairSignalEntity[] inputPairs, int inputNotional, double signalIn, double signalOut, double hedgeRatio)
+        {
+            var notional = inputNotional / (1.0 + hedgeRatio);
+            IEnumerable<SignalEntity> signal1 = inputPairs.Select(s => new SignalEntity
+            {
+                Ticker = s.Ticker1,
+                Date = s.Date,
+                Price = s.Price1,
+                Signal = s.Signal
+            });
+            IEnumerable<SignalEntity> signal2 = inputPairs.Select(s => new SignalEntity
+            {
+                Ticker = s.Ticker2,
+                Date = s.Date,
+                Price = s.Price2,
+                Signal = -s.Signal
+            });
+            var pnl1 = ComputeLongShortPnl(signal1, notional, signalIn, signalOut, StrategyTypeEnum.MeanReversion, false).ToList();
+            var pnl2 = ComputeLongShortPnl(signal2, hedgeRatio * notional, signalIn, signalOut, StrategyTypeEnum.MeanReversion, false).ToList();
+            var pairPnlEntities = new List<PairPnlEntity>();
+            var pnlEntities = new List<PnlEntity>();
+            for (int i = 0; i < pnl1.Count; i++)
+            {
+                double pnlPerTrade = pnl1[i].PnlPerTrade + pnl2[i].PnlPerTrade;
+                double pnlDaily = pnl1[i].PnLDaily + pnl2[i].PnLDaily;
+                double pnlCumHold = pnl1[i].PnLCumHold + pnl2[i].PnLCumHold;
+
+                pairPnlEntities.Add(new PairPnlEntity(inputPairs[0].Ticker1, inputPairs[1].Ticker2, pnl1[i].Date, pnl1[i].Price, pnl2[i].Price, pnl1[i].Signal, pnl1[i].TradeType, pnl2[i].TradeType, pnl1[i].NumTrades, pnl1[i].PnLDaily, pnl1[i].PnLCum, pnl2[i].PnLDaily, pnl2[i].PnLCum, pnlPerTrade, pnlDaily, pnlCumHold));
+
+                string ticker = $"{pnl1[i].Ticker},{pnl2[i].Ticker}";
+                double pnlCum = pnl1[i].PnLCum - pnl2[i].PnLCum;
+                double pnlDailyHold = pnl1[i].PnLDailyHold - pnl2[i].PnLDailyHold;
+                pnlEntities.Add(new PnlEntity(ticker, pnl1[i].Date, pnl1[i].Signal, pnl1[i].NumTrades, pnlPerTrade, pnlDaily, pnlCum, pnlDailyHold, pnlCumHold));
+            }
+
+            return (pairPnlEntities, pnlEntities);
         }
     }
 }

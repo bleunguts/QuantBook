@@ -16,6 +16,7 @@ namespace QuantBook.Tests
         string TickerFile = Directory.GetParent(Assembly.GetExecutingAssembly().Location).FullName + @"\StockTickers.csv";
 
         [Test]
+        [Ignore("Access database driver")]
         public void CsvToDatableUsingOdbcTextDriverWorks()
         {
             var csvFile = @"StockTickers.csv";
@@ -26,7 +27,6 @@ namespace QuantBook.Tests
                 Assert.IsNotNull(row["Ticker"].ToString());
                 Assert.IsNotNull(row["Region"].ToString());
                 Assert.IsNotNull(row["Sector"].ToString());
-
             }
         }
     }

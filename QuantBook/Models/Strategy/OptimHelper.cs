@@ -1,4 +1,5 @@
 ﻿using Caliburn.Micro;
+using QuantBook.Ch11;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -66,6 +67,11 @@ namespace QuantBook.Models.Strategy
             }
 
             return results;
+        }
+
+        public static DataTable OptimPairsTrading(string ticker1, string ticker2, DateTime startDate, DateTime endDate, double hedgeRatio, PairTypeEnum pairType, IEventAggregator events)
+        {
+            throw new NotImplementedException();
         }
     }
 }
