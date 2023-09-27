@@ -1,4 +1,6 @@
 ﻿using Caliburn.Micro;
+using QLNet;
+using QuantBook.Models;
 using QuantBook.Models.Strategy;
 using System;
 using System.Collections.Generic;
@@ -146,12 +148,7 @@ namespace QuantBook.Ch11
             LineSeries6.Clear();
             var pair = SignalHelper.GetPairCorrelation(Ticker1, Ticker2, StartDate, EndDate, CorrelationWindow, out betas);
             AddPriceCharts(pair);
-        }
-
-        private void AddPriceCharts(IEnumerable<PairSignalEntity> pair)
-        {
-            throw new NotImplementedException();
-        }
+        }    
 
         public async void StartOptim()
         {
@@ -162,7 +159,31 @@ namespace QuantBook.Ch11
                 LineSeries4.Clear();
                 LineSeries5.Clear();
                 LineSeries6.Clear();
-                var dt = OptimHelper.OptimPairsTrading(Ticker1, Ticker2, StartDate, EndDate, HedgeRatio, SelectedPairType, _events);
+
+                List<(string ticker1, string ticker2, int movingWindow, double signalIn, double signalOut, int numTrades, double pnl, double sharpe)> pairsTrading = OptimHelper.OptimPairsTrading(Ticker1, Ticker2, StartDate, EndDate, HedgeRatio, SelectedPairType, _events).ToList();
+                var dt = new DataTable();
+                dt.Columns.Add("Ticker1", typeof(string));
+                dt.Columns.Add("Ticker2", typeof(string));
+                dt.Columns.Add("MovingWindow", typeof(int));
+                dt.Columns.Add("SignalIn", typeof(double));
+                dt.Columns.Add("SignalOut", typeof(double));
+                dt.Columns.Add("NumTrades", typeof(int));
+                dt.Columns.Add("Pnl", typeof(double));
+                dt.Columns.Add("Sharpe", typeof(double));
+                foreach(var pair in pairsTrading)
+                {
+                    var row = dt.NewRow();
+                    row["Ticker1"] = pair.ticker1;
+                    row["Ticker2"] = pair.ticker2;
+                    row["MovingWindow"] = pair.movingWindow;
+                    row["SignalIn"] = pair.signalIn;
+                    row["SignalOut"] = pair.signalOut;
+                    row["NumTrades"] = pair.numTrades;
+                    row["Pnl"] = pair.pnl;
+                    row["Sharpe"] = pair.sharpe;
+                    dt.Rows.Add(row);
+                }
+                ModelHelper.DatatableSort(dt, "Pnl DESC");
                 OptimTable = dt;
             });
         }
@@ -171,19 +192,147 @@ namespace QuantBook.Ch11
         {
             await Task.Run(() =>
             {
-                AddSignalChart();
-                AddPnlCharts();
+                try
+                {
+                    var signalPairs = SignalHelper.GetPairCorrelation(Ticker1, Ticker2, StartDate, EndDate, CorrelationWindow, out betas);
+                    if(signalPairs == null || !signalPairs.Any())
+                    {
+                        throw new ArgumentNullException(nameof(signalPairs), $"GetPairCorrelation returned no results for {Ticker1},{Ticker2},Start={StartDate},End={EndDate},CorrelationWindow={CorrelationWindow}");
+                    }
+
+                    DataRowView view = ToView(e.AddedCells);
+                    int movingWindow = view["MovingWindow"].To<int>();
+                    var signal = SignalHelper.GetPairSignal(SelectedPairType, signalPairs.ToArray(), movingWindow);
+                    if (signal == null || !signal.Any())
+                    {
+                        throw new ArgumentNullException(nameof(signal), $"GetPairSignal returned no results for PairType:{SelectedPairType} MovingWindow: {movingWindow}");
+                    }
+                    PairCollection.Clear();
+                    PairCollection.AddRange(signal);
+
+                    double signalIn = view["SignalIn"].To<double>();
+                    double signalOut = view["SignalOut"].To<double>();
+                    (IEnumerable<PairPnlEntity> pairEntities, IEnumerable<PnlEntity> pnlEntities) = BacktestHelper.ComputePnLPair(signal.ToArray(), 10000, signalIn, signalOut, HedgeRatio);
+                    PnlCollection.Clear();
+                    PnlCollection.AddRange(pairEntities);
+
+                    DataTable dt = new DataTable();
+                    List<(string ticker, string year, int numTrades, double pnl, double sp0, double pnl2, double sp1)> pnls = BacktestHelper.GetYearlyPnl(new List<PnlEntity>(pnlEntities));
+                    dt.Columns.Add("ticker", typeof(string));
+                    dt.Columns.Add("year", typeof(string));
+                    dt.Columns.Add("numTrades", typeof(int));
+                    dt.Columns.Add("pnl", typeof(double));
+                    dt.Columns.Add("sp0", typeof(double));
+                    dt.Columns.Add("pnl2", typeof(double));
+                    dt.Columns.Add("sp1", typeof(double));
+                    foreach (var pnl in pnls)
+                    {
+                        var row = dt.NewRow();
+                        row["ticker"] = pnl.ticker;
+                        row["year"] = pnl.year;
+                        row["numTrades"] = pnl.numTrades;
+                        row["pnl"] = pnl.pnl;
+                        row["sp0"] = pnl.sp0;
+                        row["pnl2"] = pnl.pnl2;
+                        row["sp1"] = pnl.sp1;
+                        dt.Rows.Add(row);
+                    }
+                    YearlyPnlTable = dt;
+
+                    AddSignalChart();
+                    AddPnlCharts();
+                }
+                catch
+                {
+                    throw;
+                }
+
+                DataRowView ToView(IList<DataGridCellInfo> selectedCells) => (DataRowView) selectedCells[selectedCells.Count - 1].Item;
+                
             });
         }
-
-        private void AddPnlCharts()
+        private void AddPriceCharts(IEnumerable<PairSignalEntity> pair)
         {
-            throw new NotImplementedException();
-        }
+            Title1 = $"{Ticker1},{Ticker2}: Stock Price";
+            Title2 = $"{Ticker1},{Ticker2}: Correlation (Correl_Avg={Math.Round(betas[2], 3)} Correl_All = {Math.Round(betas[3], 3)}";
+            Title3 = $"{Ticker1},{Ticker2}: Beta (Beta_Avg={Math.Round(betas[0], 3)} Beta_All = {Math.Round(betas[1], 3)}";
 
+            LineSeries1.Clear();
+            LineSeries2.Clear();
+            LineSeries3.Clear();
+            var pairList = pair.ToList();
+
+            var ds = new Series()
+            {
+                ChartType = SeriesChartType.Line,
+                Name = $"{Ticker1} Price",
+            };
+            pairList.ForEach(p => ds.Points.AddXY(p.Date, p.Price1));
+            LineSeries1.Add(ds);
+
+            ds = new Series()
+            {
+                ChartType = SeriesChartType.Line,
+                Color = System.Drawing.Color.Red,
+                Name = $"{Ticker2} Price",
+                YAxisType = AxisType.Secondary
+            };
+            pairList.ForEach(p => ds.Points.AddXY(p.Date, p.Price2));
+            LineSeries1.Add(ds);
+
+            ds = new Series()
+            {
+                ChartType = SeriesChartType.Line,
+                Name = $"{Ticker2} Correlation",
+            };
+            pairList.ForEach(p => ds.Points.AddXY(p.Date, p.Correlation));
+            LineSeries2.Add(ds);
+
+            ds = new Series()
+            {
+                ChartType = SeriesChartType.Line
+            };
+            pairList.ForEach(p => ds.Points.AddXY(p.Date, p.Beta));
+            LineSeries3.Add(ds);
+        } 
         private void AddSignalChart()
         {
-            throw new NotImplementedException();
+            Title4 = $"{Ticker1},{Ticker2}: Signal";
+            LineSeries4.Clear();
+            var ds = new Series()
+            {
+                ChartType = SeriesChartType.Line,
+            };
+            PairCollection.ToList().ForEach(p => ds.Points.AddXY(p.Date, p.Signal));
+            LineSeries4.Add(ds);            
         }
+        private void AddPnlCharts()
+        {
+            double pnl = 0.0;
+            double sharpe = 0.0;
+            int numTrades = 0;
+            Title5 = $"{Ticker1},{Ticker2}: P&L (Total PnL = {pnl}, Sharpe = {sharpe}, NumTrades={numTrades}";
+            LineSeries5.Clear();
+            Series ds = new Series()
+            {
+                ChartType= SeriesChartType.Line,    
+                Color = System.Drawing.Color.Red,
+                 Name = "PnL"
+            };
+            PnlCollection.ToList().ForEach(p => ds.Points.AddXY(p.Date, p.PnLCum1));
+            LineSeries5.Add(ds);
+
+            Title6 = $"{Ticker1},{Ticker2}: Drawdown";
+            LineSeries6.Clear();
+            ds = new Series()
+            {
+                ChartType = SeriesChartType.Line,
+                Name = "Maxdrawdown",
+                Color = System.Drawing.Color.Red                
+            };
+            PnlCollection.ToList().ForEach(p => ds.Points.AddXY(p.Date, p.PnLCum1));
+            LineSeries6.Add(ds);
+        }
+
     }
 }

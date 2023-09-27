@@ -4,6 +4,7 @@ using QLNet;
 using QuantBook.Models.Strategy;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace QuantBook.Tests
 {
@@ -50,9 +51,12 @@ namespace QuantBook.Tests
         [Test]
         public void WhenGettingPairsTradingItShouldReturnAValidTable()
         {
-            var result = OptimHelper.OptimPairsTrading("aTicker1", "aTicker2", startDate, endDate, 1.0, PairTypeEnum.PriceRatio, null); ;
-            Assert.That(result, Is.Not.Null);
-            Assert.That(result.Rows.Count, Is.GreaterThan(1));
+            IEventAggregator events = new EventAggregator();
+            IEnumerable<(string ticker1, string ticker2, int movingWindow, double signalIn, double signalOut, int numTrades, double pnl, double sharpe)> pairsTrading = OptimHelper.OptimPairsTrading("aTicker1", "aTicker2", startDate, endDate, 1.1, PairTypeEnum.PriceRatio, events);
+            var pairsTradingResults = pairsTrading.ToList();
+            
+            Assert.That(pairsTradingResults, Is.Not.Null);
+            Assert.That(pairsTradingResults.Count, Is.GreaterThan(0));
         }
     }
 }

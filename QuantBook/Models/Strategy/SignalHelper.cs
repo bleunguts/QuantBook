@@ -1,6 +1,7 @@
 ﻿using Caliburn.Micro;
 using QLNet;
 using QuantBook.Ch11;
+using QuantBook.Models.AnalysisModel;
 using QuantBook.Models.DataModel.Quandl;
 using System;
 using System.Collections.Generic;
@@ -220,13 +221,13 @@ namespace QuantBook.Models.Strategy
             var builder = new PairSignalBuilder();
             builder.Ticker1 = ticker1;
             builder.Ticker2 = ticker2;  
-
             var results = new List<PairSignalEntity>();
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 200; i++)
             {
                 results.Add(builder.NewSignal(RandomPrice(), RandomPrice()));
             };
-            betas = new[] { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+            
+            betas = results.Select(x => x.Beta).ToArray();            
             return results;
         }
         

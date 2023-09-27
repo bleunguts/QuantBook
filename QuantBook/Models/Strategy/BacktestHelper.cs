@@ -22,7 +22,8 @@ namespace QuantBook.Models.Strategy
         {       
             ActivePosition activePosition = ActivePosition.INACTIVE;
             var signals = new List<SignalEntity>(inputSignals);
-            var pnlEntities = new List<PnlEntity>() { PnlEntity.Build(signals[0].Date, signals[0].Ticker, signals[0].Price, signals[0].Signal, PnlTradeType.POSITION_NONE) };
+            var candidateSignal = signals.First();
+            var pnlEntities = new List<PnlEntity>() { PnlEntity.Build(candidateSignal.Date, candidateSignal.Ticker, candidateSignal.Price, candidateSignal.Signal, PnlTradeType.POSITION_NONE) };
          
             double pnlCum = 0.0;
             int totalNumTrades = 0;
@@ -156,7 +157,7 @@ namespace QuantBook.Models.Strategy
         /// Sharpe ratio is a risk measure used to determine return of the strategy above risk free rate
         /// It average of daily returns divided by standard deviation of the daily returns        
         /// </summary>        
-        public static double[] GetSharpe(List<PnlEntity> pnl)
+        public static double[] GetSharpe(IEnumerable<PnlEntity> pnl)
         {
 
             // computes annualized sharpe ratio by taking int account daily P&L from the strategy and from the buying-and-holding of position
@@ -206,7 +207,7 @@ namespace QuantBook.Models.Strategy
         }
 
         public static (IEnumerable<PairPnlEntity> pairEntities, IEnumerable<PnlEntity> pnlEntities) ComputePnLPair(PairSignalEntity[] inputPairs, int inputNotional, double signalIn, double signalOut, double hedgeRatio)
-        {
+        {     
             var notional = inputNotional / (1.0 + hedgeRatio);
             IEnumerable<SignalEntity> signal1 = inputPairs.Select(s => new SignalEntity
             {
@@ -214,7 +215,7 @@ namespace QuantBook.Models.Strategy
                 Date = s.Date,
                 Price = s.Price1,
                 Signal = s.Signal
-            });
+            });            
             IEnumerable<SignalEntity> signal2 = inputPairs.Select(s => new SignalEntity
             {
                 Ticker = s.Ticker2,
@@ -222,6 +223,16 @@ namespace QuantBook.Models.Strategy
                 Price = s.Price2,
                 Signal = -s.Signal
             });
+
+            if (signal1 == null || !signal1.Any())
+            {
+                throw new ArgumentNullException(nameof(signal1));
+            }
+            if (signal2 == null || !signal2.Any())
+            {
+                throw new ArgumentNullException(nameof(signal2));
+            }
+
             var pnl1 = ComputeLongShortPnl(signal1, notional, signalIn, signalOut, StrategyTypeEnum.MeanReversion, false).ToList();
             var pnl2 = ComputeLongShortPnl(signal2, hedgeRatio * notional, signalIn, signalOut, StrategyTypeEnum.MeanReversion, false).ToList();
             var pairPnlEntities = new List<PairPnlEntity>();

@@ -76,7 +76,7 @@
                   ColumnWidth="*" SelectionUnit="FullRow" 
                   cal:Message.Attach="[Event SelectedCellsChanged] = [Action SelectedCellChanged($source, $eventArgs)]" >
                 </DataGrid>
-                <DataGrid x:Name="PNLCollection" 
+                <DataGrid x:Name="PnlCollection" 
                   ColumnWidth="*" CanUserAddRows="False" SelectionUnit="Cell" Grid.Column="1">
                 </DataGrid>
             </Grid>

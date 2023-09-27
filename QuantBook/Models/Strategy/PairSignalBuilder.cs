@@ -9,6 +9,7 @@ namespace QuantBook.Models.Strategy
         public string Ticker2 { get; set; } = "aTicker2";
 
         private Random random = new Random();
+
         private static int counter = 0;
         private static DateTime date = DateTime.Now.AddDays(-100);
 

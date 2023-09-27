@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace QuantBook.Models.Strategy
 {
@@ -69,9 +70,60 @@ namespace QuantBook.Models.Strategy
             return results;
         }
 
-        public static DataTable OptimPairsTrading(string ticker1, string ticker2, DateTime startDate, DateTime endDate, double hedgeRatio, PairTypeEnum pairType, IEventAggregator events)
+        public static IEnumerable<(string ticker1, string ticker2, int movingWindow, double signalIn, double signalOut, int numTrades, double pnl, double sharpe)> OptimPairsTrading(string ticker1, string ticker2, DateTime startDate, DateTime endDate, double hedgeRatio, PairTypeEnum pairType, IEventAggregator events)
         {
-            throw new NotImplementedException();
+            var results = new List<(string ticker1, string ticker2, int movingWindow, double signalIn, double signalOut, int numTrades, double pnl, double sharpe)>();
+            int[] bars = new int[] { 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 150, 200 };
+            double[] zin = new double[] { 0.5,0.6,0.7,0.8,0.9,1.0,1.2,1.4,1.6,1.8,2.0,2.2,2.4,2.6};
+            double[] zout = new double[] { 0, 0.1, 0.2, 0.3, 0.4 };
+
+            int movingWindow = 3;
+            int notional = 10000;
+
+            events.PublishOnUIThread(new ModelEvents(new List<object>()
+            {
+                "Starting...",
+                0,
+                bars.Length,
+                0
+            }));
+
+            double[] betas;
+            var pairCorrelationSignals = SignalHelper.GetPairCorrelation(ticker1, ticker2, startDate, endDate, 100, out betas).ToArray();
+            for (int i = 0; i< bars.Length; i++)
+            {
+                var pairSignals = SignalHelper.GetPairSignal(pairType, pairCorrelationSignals, movingWindow).ToArray();
+                for (int j = 0; j < zin.Length; j++)
+                {
+                    for (int k = 0; k < zout.Length; k++)
+                    {
+                        (IEnumerable<PairPnlEntity> pairEntities, IEnumerable<PnlEntity> pnlEntities) = BacktestHelper.ComputePnLPair(pairSignals, notional, zin[j], zout[k], hedgeRatio);
+                        double[] sharpes = BacktestHelper.GetSharpe(pnlEntities);
+
+                        if (sharpes.Length > 0)
+                        {
+                            var pnlEntity = pnlEntities.Last();
+                            results.Add((ticker1, ticker2, bars[i], zin[j], zout[k], pnlEntity.NumTrades, pnlEntity.PnLCum, sharpes[0]));
+                        }
+                    }
+                }
+                events.PublishOnUIThread(new List<object>
+                {
+                    $"Total Runs = {bars.Length}, i = {i + 1}",
+                    0,
+                    1,
+                    i
+                });
+            }
+            events.PublishOnUIThread(new List<object>
+            {
+                "Ready",
+                0,
+                1,
+                0
+            });
+
+            return results;
         }
     }
 }
