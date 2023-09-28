@@ -28,11 +28,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Accord.Statistics" Version="3.8.2-alpha" />
     <PackageReference Include="Caliburn.Micro" Version="2.0.2" />
     <PackageReference Include="EntityFramework" Version="6.4.4" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.39" />
+    <PackageReference Include="NQuantLib.dll" Version="1.0.2" />
     <PackageReference Include="QLNet" Version="1.13.0" />
     <PackageReference Include="Quandl.NET" Version="1.2.1" />
+    <PackageReference Include="QuandlCS" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>

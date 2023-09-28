@@ -2,12 +2,15 @@
 using QLNet;
 using QuantBook.Ch11;
 using QuantBook.Models.AnalysisModel;
+using QuantBook.Models.DataModel;
 using QuantBook.Models.DataModel.Quandl;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Windows.Markup;
 
 namespace QuantBook.Models.Strategy
 {
@@ -218,23 +221,116 @@ namespace QuantBook.Models.Strategy
 
         public static IEnumerable<PairSignalEntity> GetPairCorrelation(string ticker1, string ticker2, DateTime startDate, DateTime endDate, int correlationWindow, out double[] betas)
         {
-            var builder = new PairSignalBuilder();
-            builder.Ticker1 = ticker1;
-            builder.Ticker2 = ticker2;  
             var results = new List<PairSignalEntity>();
-            for (int i = 0; i < 200; i++)
-            {
-                results.Add(builder.NewSignal(RandomPrice(), RandomPrice()));
-            };
+            betas = new double[4];
+
+            // fake PairStockData for
+            // Dal.GetPairStockData(ticker1, ticker2, startDate.AddDays(-2 * correlWindow), endDate, "Close", DataSourceEnum.Google)
+
+            var begin = startDate.AddDays(-2 * correlationWindow);            
+            var daysDiff = (endDate - begin).TotalDays;
+            int step = daysDiff > 1000 ? 5: 1; 
             
-            betas = results.Select(x => x.Beta).ToArray();            
+            var data = new List<PairStockData>();     
+            for(DateTime currentDate = begin; currentDate < endDate; currentDate = currentDate.AddDays(step))            
+            {
+                data.Add(new PairStockData
+                {
+                    Date = currentDate,
+                    Price1 = RandomPrice(1,23),
+                    Price2 = RandomPrice(50,90)
+                });
+            };
+
+            // post processing
+            for (int i = correlationWindow - 1; i < data.Count; i++)
+            {
+                List<double> xa = new List<double>();
+                List<double> ya = new List<double>();
+                for (int j = i - correlationWindow + 1; j <= i; j++)
+                {
+                    xa.Add((double)data[j].Price1);
+                    ya.Add((double)data[j].Price2);
+                }
+
+                double correl = ModelHelper.GetCorrelation(xa.ToArray(), ya.ToArray());
+                var lr = AnalysisModel.LinearAnalysisHelper.GetSimpleRegression(ya.ToArray(), xa.ToArray());
+                double price1 = (double)data[i].Price1;
+                double price2 = (double)data[i].Price2;
+                DateTime date = (DateTime)data[i].Date;
+
+                if (date >= startDate && date <= endDate)
+                {
+                    results.Add(new PairSignalEntity(ticker1, ticker2, date, price1, price2, correl, lr.Beta, 0.0));
+                }
+            }
+
+            betas[0] = results.Average(x => x.Beta);
+            betas[2] = results.Average(x => x.Correlation);
+            double[] xx = new double[results.Count];
+            double[] yy = new double[results.Count];
+            for (int i = 0; i < results.Count; i++)
+            {
+                xx[i] = results[i].Price1;
+                yy[i] = results[i].Price2;
+            }
+            betas[1] = AnalysisModel.LinearAnalysisHelper.GetSimpleRegression(yy, xx).Beta;
+            betas[3] = ModelHelper.GetCorrelation(xx, yy);
+
             return results;
         }
-        
-        private static double RandomPrice() 
+
+        public static IEnumerable<PairSignalEntity> GetPairCorrelationExternal(string ticker1, string ticker2, DateTime startDate, DateTime endDate, int correlWindow, out double[] betas)
+        {
+            betas = new double[4];
+            var data = Dal.GetPairStockData(ticker1, ticker2, startDate.AddDays(-2 * correlWindow), endDate, "AdjClose", DataSourceEnum.Yahoo);
+            if (data.Count < 1)
+                data = Dal.GetPairStockData(ticker1, ticker2, startDate.AddDays(-2 * correlWindow), endDate, "Close", DataSourceEnum.Google);
+            var res = new BindableCollection<PairSignalEntity>();
+            if (data.Count < 1)
+                return res;
+
+            for (int i = correlWindow - 1; i < data.Count; i++)
+            {
+                List<double> xa = new List<double>();
+                List<double> ya = new List<double>();
+                for (int j = i - correlWindow + 1; j <= i; j++)
+                {
+                    xa.Add((double)data[j].Price1);
+                    ya.Add((double)data[j].Price2);
+                }
+
+                double correl = ModelHelper.GetCorrelation(xa.ToArray(), ya.ToArray());
+                var lr = AnalysisModel.LinearAnalysisHelper.GetSimpleRegression(ya.ToArray(), xa.ToArray());
+                double price1 = (double)data[i].Price1;
+                double price2 = (double)data[i].Price2;
+                DateTime date = (DateTime)data[i].Date;
+
+                if (date >= startDate && date <= endDate)
+                {
+                    res.Add(new PairSignalEntity(ticker1, ticker2, date, price1,price2, correl, lr.Beta, 0.0));
+                }
+            }
+
+            betas[0] = res.Average(x => x.Beta);
+            betas[2] = res.Average(x => x.Correlation);
+            double[] xx = new double[res.Count];
+            double[] yy = new double[res.Count];
+            for (int i = 0; i < res.Count; i++)
+            {
+                xx[i] = res[i].Price1;
+                yy[i] = res[i].Price2;
+            }
+            betas[1] = AnalysisModel.LinearAnalysisHelper.GetSimpleRegression(yy, xx).Beta;
+            betas[3] = ModelHelper.GetCorrelation(xx, yy);
+
+            return res;
+        }
+
+        private static double RandomPrice(int from = 1, int end = 99) 
         {
             Random random = new Random(Guid.NewGuid().GetHashCode());
-            return random.Next(1, 99) + random.NextDouble();
+            return random.Next(from, end) + random.NextDouble();
         }
 
         internal static IEnumerable<PairSignalEntity> GetPairSignal(PairTypeEnum selectedPairType, PairSignalEntity[] pairSignalEntities, int movingWindow)

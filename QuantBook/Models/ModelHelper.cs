@@ -7,6 +7,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System;
+using System.Linq;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.Odbc;
+using System.IO;
+using Accord.Statistics;
 
 namespace QuantBook.Models
 {
@@ -25,15 +32,6 @@ namespace QuantBook.Models
                 autoCorrelation[i] = GetCorrelation(a, b);
             }
             return autoCorrelation;
-        }
-
-        public static double Variance(this double[] _)
-        {
-            throw new NotImplementedException();
-        }
-        public static double Covariance(this double[] _, double[] y)
-        {
-            throw new NotImplementedException();
         }
 
         public static double GetCorrelation(double[] x, double[] y)
@@ -151,8 +149,8 @@ namespace QuantBook.Models
             try
             {
                 // Creates and opens an ODBC connection
-                string strConnString = "Driver={Microsoft Text Driver (*.txt; *.csv)};Dbq=" + dirCSV.Trim() + ";Extensions=asc,csv,tab,txt;Persist Security Info=False";
-                       //strConnString = "Driver={Microsoft Access Text Driver (*.txt, *.csv)};Dbq=" + dirCSV.Trim() + ";Extensions=asc,csv,tab,txt;Persist Security Info=False";
+                string strConnString = "Driver={Microsoft Text Driver (*.txt; *.csv)};Dbq=" +
+                    dirCSV.Trim() + ";Extensions=asc,csv,tab,txt;Persist Security Info=False";
                 string sql_select;
                 OdbcConnection conn;
                 conn = new OdbcConnection(strConnString.Trim());
@@ -166,7 +164,7 @@ namespace QuantBook.Models
                 da.Fill(ds, "csv");
                 conn.Close();
             }
-            catch { throw; }
+            catch { }
             DataTable res = new DataTable();
             if (ds.Tables.Count > 0)
                 res = ds.Tables[0];
@@ -282,7 +280,6 @@ namespace QuantBook.Models
         }
 
 
-
         public static T To<T>(this object text)
         {
             if (text == null) return default(T);
@@ -293,7 +290,7 @@ namespace QuantBook.Models
             if (type.ToString() == "QuantLib.Date")
             {
                 var dt = (DateTime)text;
-                Date date = new Date((int)dt.ToOADate());
+                QuantLib.Date date = new QuantLib.Date((int)dt.ToOADate());
                 return (T)Convert.ChangeType(date, type);
             }
 
@@ -302,15 +299,17 @@ namespace QuantBook.Models
             return (T)Convert.ChangeType(text, underlyingType);
         }
 
-        public static T ToDatetime<T>(this Date date)
+        public static T ToDatetime<T>(this QuantLib.Date date)
         {
-            DateTime dt = Convert.ToDateTime(date.month() + " " + date.Day.ToString() + ", " + date.year().ToString());
+            DateTime dt = Convert.ToDateTime(date.month() + " " + date.dayOfMonth().ToString() + ", " + date.year().ToString());
             var type = typeof(T);
             if (type == typeof(string))
                 return (T)Convert.ChangeType(dt.ToShortDateString(), typeof(T));
             else
                 return (T)Convert.ChangeType(dt, typeof(T));
         }
+
+
 
 
 
@@ -338,3 +337,4 @@ namespace QuantBook.Models
 
     }
 }
+

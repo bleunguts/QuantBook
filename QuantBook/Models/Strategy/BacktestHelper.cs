@@ -243,7 +243,7 @@ namespace QuantBook.Models.Strategy
                 double pnlDaily = pnl1[i].PnLDaily + pnl2[i].PnLDaily;
                 double pnlCumHold = pnl1[i].PnLCumHold + pnl2[i].PnLCumHold;
 
-                pairPnlEntities.Add(new PairPnlEntity(inputPairs[0].Ticker1, inputPairs[1].Ticker2, pnl1[i].Date, pnl1[i].Price, pnl2[i].Price, pnl1[i].Signal, pnl1[i].TradeType, pnl2[i].TradeType, pnl1[i].NumTrades, pnl1[i].PnLDaily, pnl1[i].PnLCum, pnl2[i].PnLDaily, pnl2[i].PnLCum, pnlPerTrade, pnlDaily, pnlCumHold));
+                pairPnlEntities.Add(new PairPnlEntity(inputPairs[0].Ticker1, inputPairs[0].Ticker2, pnl1[i].Date, pnl1[i].Price, pnl2[i].Price, pnl1[i].Signal, pnl1[i].TradeType, pnl2[i].TradeType, pnl1[i].NumTrades, pnl1[i].PnLDaily, pnl1[i].PnLCum, pnl2[i].PnLDaily, pnl2[i].PnLCum, pnlPerTrade, pnlDaily, pnlCumHold));
 
                 string ticker = $"{pnl1[i].Ticker},{pnl2[i].Ticker}";
                 double pnlCum = pnl1[i].PnLCum - pnl2[i].PnLCum;

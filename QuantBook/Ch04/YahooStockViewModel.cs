@@ -51,7 +51,7 @@ namespace QuantBook.Ch04
 
         public void HistPrices()
         {
-            MyPrices = YahooHelper.GetYahooHistStockDataTAble(Ticker, StartDate, EndDate);
+            MyPrices = YahooHelper.GetYahooHistStockDataTable(Ticker, StartDate, EndDate);
         }
 
         public void StockQuotes()

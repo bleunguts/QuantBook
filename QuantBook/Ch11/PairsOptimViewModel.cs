@@ -200,12 +200,12 @@ namespace QuantBook.Ch11
                         throw new ArgumentNullException(nameof(signalPairs), $"GetPairCorrelation returned no results for {Ticker1},{Ticker2},Start={StartDate},End={EndDate},CorrelationWindow={CorrelationWindow}");
                     }
 
-                    DataRowView view = ToView(e.AddedCells);
+                    DataRowView view = (DataRowView) e.AddedCells.Last().Item;
                     int movingWindow = view["MovingWindow"].To<int>();
                     var signal = SignalHelper.GetPairSignal(SelectedPairType, signalPairs.ToArray(), movingWindow);
                     if (signal == null || !signal.Any())
                     {
-                        throw new ArgumentNullException(nameof(signal), $"GetPairSignal returned no results for PairType:{SelectedPairType} MovingWindow: {movingWindow}");
+                        throw new ArgumentNullException(nameof(signal), $"GetPairSignal returned no results for PairType:{SelectedPairType} MovingWindow: {movingWindow} SignalPairsLength: {signalPairs.ToArray().Length}");
                     }
                     PairCollection.Clear();
                     PairCollection.AddRange(signal);
@@ -246,9 +246,6 @@ namespace QuantBook.Ch11
                 {
                     throw;
                 }
-
-                DataRowView ToView(IList<DataGridCellInfo> selectedCells) => (DataRowView) selectedCells[selectedCells.Count - 1].Item;
-                
             });
         }
         private void AddPriceCharts(IEnumerable<PairSignalEntity> pair)

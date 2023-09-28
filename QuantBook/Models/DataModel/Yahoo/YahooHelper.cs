@@ -11,117 +11,235 @@ namespace QuantBook.Models.DataModel.Yahoo
 {
     public static class YahooHelper
     {
-        public static DataTable GetYahooHistStockDataTAble(string ticker, DateTime? startDate, DateTime? endDate)
+        private const string url_quotes = "http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.quotes%20where%20symbol%20in%20({0})&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys";
+       
+        public static DataTable GetYahooHistStockDataTable1(string ticker, DateTime? startDate, DateTime? endDate)
         {
-            string urlTemplate = @"http://ichart.finance.yahoo.com/table.csv?s=[symbol]&a=[startMonth]&b=[startDay]&c=[startYear]&d=[endMonth]&e=[endDay]&f=[endYear]&g=d&ignore=.csv";
+            string url = @"http://ichart.finance.yahoo.com/table.csv?s=[symbol]&a=[startMonth]&b=[startDay]&c=[startYear]&d=[endMonth]&e=[endDay]&f=[endYear]&g=d&ignore=.csv";
             if (!endDate.HasValue) endDate = DateTime.Now;
             if (!startDate.HasValue) startDate = DateTime.Now.AddYears(-5);
             if (ticker == null || ticker.Length < 1)
-            {
                 throw new ArgumentException("Symbol invalid: " + ticker);
-            }
 
-            urlTemplate = urlTemplate.Replace("[symbol]", ticker);
-            urlTemplate = urlTemplate.Replace("[startMonth]", startDate.Value.Month.ToString());
-            urlTemplate = urlTemplate.Replace("[startDay]", startDate.Value.Day.ToString());
-            urlTemplate = urlTemplate.Replace("[startYear]", startDate.Value.Year.ToString());
-            urlTemplate = urlTemplate.Replace("[endMonth]", endDate.Value.Month.ToString());
-            urlTemplate = urlTemplate.Replace("[endDay]", endDate.Value.Day.ToString());
-            urlTemplate = urlTemplate.Replace("[endYear]", endDate.Value.Year.ToString());
-            var history = string.Empty;
-            using (var webClient = new WebClient())
+            // NOTE: Yahoo's scheme uses a month number 1 less than actual e.g. Jan. ="0"
+            int strtMo = startDate.Value.Month - 1;
+            string startMonth = strtMo.ToString();
+            string startDay = startDate.Value.Day.ToString();
+            string startYear = startDate.Value.Year.ToString();
+
+            int endMo = endDate.Value.Month - 1;
+            string endMonth = endMo.ToString();
+            string endDay = endDate.Value.Day.ToString();
+            string endYear = endDate.Value.Year.ToString();
+
+            url = url.Replace("[symbol]", ticker);
+            url = url.Replace("[startMonth]", startMonth);
+            url = url.Replace("[startDay]", startDay);
+            url = url.Replace("[startYear]", startYear);
+            url = url.Replace("[endMonth]", endMonth);
+            url = url.Replace("[endDay]", endDay);
+            url = url.Replace("[endYear]", endYear);
+
+            using (WebClient wc = new WebClient())
             {
                 try
                 {
-                    history = webClient.DownloadString(urlTemplate);
+                    if (File.Exists("myYahoo.csv"))
+                        File.Delete("myYahoo.csv");
+                    wc.DownloadFile(url, "myYahoo.csv");
                 }
                 catch { }
             }
 
             DataTable dt = new DataTable();
-            history = history.Replace("\r", "");
-            var rows = history.Split('\n');
-            rows[0].Split(',').Select(colName => dt.Columns.Add(colName));
-            for (int i = 0; i < rows.Length - 1; i++)
+            if (File.Exists("myYahoo.csv"))
             {
-                var values = rows[i].Split(',');
-                var row = dt.NewRow();
-                if (!string.IsNullOrEmpty(values.First()))
+                dt = ModelHelper.CsvToDatatable("myYahoo.csv");
+                File.Delete("myYahoo.csv");
+            }
+
+            dt.Columns.Add("Ticker", typeof(string));
+            foreach (DataRow row in dt.Rows)
+                row["Ticker"] = ticker;
+            return dt;
+        }
+
+        public static DataTable GetYahooHistStockDataTable(string ticker, DateTime? startDate, DateTime? endDate)
+        {
+
+            string urlTemplate =
+              @"http://ichart.finance.yahoo.com/table.csv?s=[symbol]&a=[startMonth]&b=[startDay]&c=[startYear]&d=[endMonth]&e=[endDay]&f=[endYear]&g=d&ignore=.csv";
+            if (!endDate.HasValue) endDate = DateTime.Now;
+            if (!startDate.HasValue) startDate = DateTime.Now.AddYears(-5);
+            if (ticker == null || ticker.Length < 1)
+                throw new ArgumentException("Symbol invalid: " + ticker);
+
+            // NOTE: Yahoo's scheme uses a month number 1 less than actual e.g. Jan. ="0"
+            int strtMo = startDate.Value.Month - 1;
+            string startMonth = strtMo.ToString();
+            string startDay = startDate.Value.Day.ToString();
+            string startYear = startDate.Value.Year.ToString();
+
+            int endMo = endDate.Value.Month - 1;
+            string endMonth = endMo.ToString();
+            string endDay = endDate.Value.Day.ToString();
+            string endYear = endDate.Value.Year.ToString();
+
+            urlTemplate = urlTemplate.Replace("[symbol]", ticker);
+            urlTemplate = urlTemplate.Replace("[startMonth]", startMonth);
+            urlTemplate = urlTemplate.Replace("[startDay]", startDay);
+            urlTemplate = urlTemplate.Replace("[startYear]", startYear);
+            urlTemplate = urlTemplate.Replace("[endMonth]", endMonth);
+            urlTemplate = urlTemplate.Replace("[endDay]", endDay);
+            urlTemplate = urlTemplate.Replace("[endYear]", endYear);
+            string history = String.Empty;
+
+            //MessageBox.Show(urlTemplate);
+
+            using (WebClient wc = new WebClient())
+            {
+                try
                 {
-                    row.ItemArray = values;
+                    history = wc.DownloadString(urlTemplate);
+                }
+                catch { }
+            }
+
+            DataTable dt = new DataTable();
+            // trim off unused characters from end of line
+            history = history.Replace("\r", "");
+            // split to array on end of line
+            string[] rows = history.Split('\n');
+            // split to colums
+            string[] colNames = rows[0].Split(',');
+            // add the columns to the DataTable
+            foreach (string colName in colNames)
+                dt.Columns.Add(colName);
+            DataRow row = null;
+            string[] rowValues;
+            object[] rowItems;
+            // split the rows
+            for (int i = rows.Length - 1; i > 0; i--)
+            {
+                rowValues = rows[i].Split(',');
+                row = dt.NewRow();
+                rowItems = ConvertStringArrayToObjectArray(rowValues);
+                if (rowItems[0] != null && (string)rowItems[0] != "")
+                {
+                    row.ItemArray = rowItems;
                     dt.Rows.Add(row);
                 }
             }
-            var results = new DataTable();
-            results.Columns.Add("Ticker", typeof(string));
-            results.Columns.Add("Date", typeof(DateTime));
-            results.Columns.Add("Open", typeof(decimal));
-            results.Columns.Add("High", typeof(decimal));
-            results.Columns.Add("Low", typeof(decimal));
-            results.Columns.Add("Close", typeof(decimal));
-            results.Columns.Add("Volume", typeof(decimal));
-            results.Columns.Add("Adj Close", typeof(decimal));
+            //return dt;
 
-            foreach (DataRow row in dt.Rows)
+            DataTable res = new DataTable();
+            res.Columns.Add("Ticker", typeof(string));
+            res.Columns.Add("Date", typeof(DateTime));
+            res.Columns.Add("Open", typeof(decimal));
+            res.Columns.Add("High", typeof(decimal));
+            res.Columns.Add("Low", typeof(decimal));
+            res.Columns.Add("Close", typeof(decimal));
+            res.Columns.Add("Volume", typeof(decimal));
+            res.Columns.Add("Adj Close", typeof(decimal));
+
+            foreach (DataRow row1 in dt.Rows)
             {
-                var date = DateTime.ParseExact(row["Date"].ToString(), "yyyy-MM-dd", CultureInfo.InvariantCulture).AddDays(1);
-                results.Rows.Add(ticker, date.ToShortDateString(),
-                    Convert.ToDecimal(row["Open"]),
-                    Convert.ToDecimal(row["High"]),
-                    Convert.ToDecimal(row["Low"]),
-                    Convert.ToDecimal(row["Close"]),
-                    Convert.ToDecimal(row["Volume"]),
-                    Convert.ToDecimal(row["Adj Close"]));
+                DateTime date = (DateTime.ParseExact(row1["Date"].ToString(), "yyyy-MM-dd", CultureInfo.InvariantCulture).ToLocalTime()).AddDays(1);
+                date = Convert.ToDateTime(date.ToShortDateString());
+                res.Rows.Add(ticker, date,
+                    Convert.ToDecimal(row1["Open"]),
+                    Convert.ToDecimal(row1["High"]),
+                    Convert.ToDecimal(row1["Low"]),
+                    Convert.ToDecimal(row1["Close"]),
+                    Convert.ToDecimal(row1["Volume"]),
+                    Convert.ToDecimal(row1["Adj Close"]));
             }
-            return results;
+
+            return res;
         }
 
-        private const string url_quotes = "http://query.yahooapis.com/v1/public/yql?q=select%20*%20yahoo.finance.quotes%20where%20symbol%20in%20({0})&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys";
+        private static object[] ConvertStringArrayToObjectArray(string[] input)
+        {
+            int elements = input.Length;
+            object[] objArray = new object[elements];
+            input.CopyTo(objArray, 0);
+            return objArray;
+        }
+
 
         public static DataTable GetQuotesTable(BindableCollection<StockQuote> stockQuotes)
         {
-            var symbolList = string.Join("%2C", stockQuotes.Select(x => "%22" + x.Symbol + "%22").ToArray());
-            var url = string.Format(url_quotes, symbolList);
-
-            var doc = XDocument.Load(url);
-            var results = doc.Root.Element("results");
-            var ds = new DataSet();
+            string symbolList = string.Join("%2C", stockQuotes.Select(x => "%22" + x.Symbol + "%22").ToArray());
+            string url = string.Format(url_quotes, symbolList);
+            XDocument doc = XDocument.Load(url);
+            XElement results = doc.Root.Element("results");
+            DataSet ds = new DataSet();
             ds.ReadXml(new StringReader(results.ToString()));
             return ds.Tables[0];
         }
 
         public static void GetQuotes(BindableCollection<StockQuote> stockQuotes)
         {
-            var symbolList = string.Join("%2C", stockQuotes.Select(x => "%22" + x.Symbol + "%22").ToArray());
-            var url = string.Format(url_quotes, symbolList);
-            var doc = XDocument.Load(url);
+            string symbolList = string.Join("%2C", stockQuotes.Select(x => "%22" + x.Symbol + "%22").ToArray());
+            string url = string.Format(url_quotes, symbolList);
+            XDocument doc = XDocument.Load(url);
             ParseQuotes(stockQuotes, doc);
         }
 
-        private static void ParseQuotes(BindableCollection<StockQuote> stockQuotes, XDocument doc)
+        private static void ParseQuotes(BindableCollection<StockQuote> quotes, XDocument doc)
         {
-            var results = doc.Root.Element("results");
-
-            foreach (var quote in stockQuotes)
+            XElement results = doc.Root.Element("results");
+            foreach (StockQuote quote in quotes)
             {
-                var element = results.Elements("quote").First(XDocument => XDocument.Attribute("symbol").Value == quote.Symbol);
-                quote.Ask = Convert.ToDecimal(element.Element("Ask").Value);
-                quote.Bid = Convert.ToDecimal(element.Element("Bid").Value);
-                quote.Change = Convert.ToDecimal(element.Element("Change").Value);
-                quote.PercentChange = Convert.ToDecimal(element.Element("PercentChange").Value);
-                quote.LastTradeTime = Convert.ToDateTime(element.Element("LastTradeTime").Value);
-                quote.DailyLow = Convert.ToDecimal(element.Element("DailyLow").Value);
-                quote.DailyHigh = Convert.ToDecimal(element.Element("DailyHigh").Value);
-                quote.YearlyLow = Convert.ToDecimal(element.Element("YearlyLow").Value);
-                quote.YearlyHigh = Convert.ToDecimal(element.Element("YearlyHigh").Value);
-                quote.LastTradePrice = Convert.ToDecimal(element.Element("LastTradePriceOnly").Value);
-                quote.Name = element.Element("Name").Value;
-                quote.Open = Convert.ToDecimal(element.Element("Open").Value);
-                quote.Volume = Convert.ToDecimal(element.Element("Volume").Value);
-                quote.StockExchange = element.Element("StockExchange").Value;
-                quote.LastUpdate = DateTime.Now;
+                try
+                {
+                    XElement element = results.Elements("quote").First(x => x.Attribute("symbol").Value == quote.Symbol);
+                    quote.Ask = GetDecimal(element.Element("Ask").Value);
+                    quote.Bid = GetDecimal(element.Element("Bid").Value);
+                    quote.Change = GetDecimal(element.Element("Change").Value);
+                    quote.PercentChange = GetDecimal(element.Element("PercentChange").Value);
+                    quote.LastTradeTime = GetDateTime(element.Element("LastTradeTime").Value);
+                    quote.DailyLow = GetDecimal(element.Element("DaysLow").Value);
+                    quote.DailyHigh = GetDecimal(element.Element("DaysHigh").Value);
+                    quote.YearlyLow = GetDecimal(element.Element("YearLow").Value);
+                    quote.YearlyHigh = GetDecimal(element.Element("YearHigh").Value);
+                    quote.LastTradePrice = GetDecimal(element.Element("LastTradePriceOnly").Value);
+                    quote.Name = element.Element("Name").Value;
+                    quote.Open = GetDecimal(element.Element("Open").Value);
+                    quote.Volume = GetDecimal(element.Element("Volume").Value);
+                    quote.StockExchange = element.Element("StockExchange").Value;
+                    quote.LastUpdate = DateTime.Now;
+                }
+                catch { }
             }
         }
+
+
+        private static decimal? GetDecimal(string input)
+        {
+            if (input == null) return null;
+
+            input = input.Replace("%", "");
+
+            decimal value;
+
+            if (Decimal.TryParse(input, out value)) return value;
+            return null;
+        }
+
+        private static DateTime? GetDateTime(string input)
+        {
+            if (input == null) return null;
+
+            DateTime value;
+
+            if (DateTime.TryParse(input, out value)) return value;
+            return null;
+        }
+
+
+
+
 
         public static void SymbolInsert(Symbol symbol)
         {
@@ -132,10 +250,7 @@ namespace QuantBook.Models.DataModel.Yahoo
                     db.Symbols.AddObject(symbol);
                     db.SaveChanges();
                 }
-                catch
-                {
-
-                }
+                catch { }
             }
         }
 
@@ -147,14 +262,13 @@ namespace QuantBook.Models.DataModel.Yahoo
                 {
                     foreach (var s in symbols)
                     {
-                        db.Symbols.AddObject(s);
+                        var symbol = new Symbol();
+                        symbol = s;
+                        db.Symbols.AddObject(symbol);
                     }
                     db.SaveChanges();
                 }
-                catch
-                {
-
-                }
+                catch { }
             }
         }
 
@@ -180,25 +294,23 @@ namespace QuantBook.Models.DataModel.Yahoo
             return symbols;
         }
 
-        public static BindableCollection<Price> GetYahooHistStockData(int symbolId, string ticker, DateTime startDate, DateTime endDate)
+
+
+
+        public static string IdToTicker(int symbolId)
         {
-            var result = new BindableCollection<Price>();
-            DataTable prices = GetYahooHistStockDataTAble(ticker, startDate, endDate);
-            foreach (DataRow row in prices.Rows)
+            string ticker = string.Empty;
+
+            using (var db = new MyDbEntities())
             {
-                result.Add(new Price
-                {
-                    SymbolID = symbolId,
-                    Date = Convert.ToDateTime(row["Date"]),
-                    PriceOpen = Convert.ToDouble(row["Open"]),
-                    PriceClose = Convert.ToDouble(row["Close"]),
-                    PriceLow = Convert.ToDouble(row["Low"]),
-                    PriceHigh = Convert.ToDouble(row["High"]),
-                    PriceAdj = Convert.ToDouble(row["Adj Close"]),
-                    Volume = Convert.ToDouble(row["Volume"]),
-                });
+                var query = from s in db.Symbols
+                            where (s.SymbolID == symbolId)
+                            select s.Ticker;
+
+                foreach (var q in query)
+                    ticker = q.ToString();
             }
-            return result;
+            return ticker;
         }
 
         public static void PriceInsert(Price price)
@@ -210,10 +322,7 @@ namespace QuantBook.Models.DataModel.Yahoo
                     db.Prices.AddObject(price);
                     db.SaveChanges();
                 }
-                catch
-                {
-
-                }
+                catch { }
             }
         }
 
@@ -227,8 +336,9 @@ namespace QuantBook.Models.DataModel.Yahoo
                     {
                         var price = new Price();
                         price = p;
-                        db.Prices.AddObject(price);
+                        db.Prices.AddObject(price);                        
                     }
+                    db.SaveChanges();
                 }
                 catch { }
             }
@@ -236,37 +346,38 @@ namespace QuantBook.Models.DataModel.Yahoo
 
         public static BindableCollection<Symbol> GetTickers()
         {
-            var result = new BindableCollection<Symbol>();
+            var res = new BindableCollection<Symbol>();
             using (var db = new MyDbEntities())
             {
                 try
                 {
                     var query = from s in db.Symbols orderby s.Ticker select s;
-                    result.AddRange(query);
+                    res.AddRange(query);
                 }
-                catch
-                {
-
-                }
+                catch { }
             }
-            return result;
+            return res;
         }
 
-        public static string IdToTicker(int symbolId)
+        public static BindableCollection<Price> GetYahooHistStockData(int symbolId, string ticker, DateTime startDate, DateTime endDate)
         {
-            string ticker = string.Empty;
-
-            using (var db = new MyDbEntities())
+            BindableCollection<Price> res = new BindableCollection<Price>();
+            DataTable prices = GetYahooHistStockDataTable(ticker, startDate, endDate);
+            foreach (DataRow r in prices.Rows)
             {
-                var query = from s in db.Symbols
-                            where s.SymbolID == symbolId
-                            select s.Ticker;
-
-                foreach (var q in query)
-                    ticker = q.ToString();
+                res.Add(new Price
+                {
+                    SymbolID = symbolId,
+                    Date = Convert.ToDateTime(r["Date"]),
+                    PriceOpen = Convert.ToDouble(r["Open"]),
+                    PriceHigh = Convert.ToDouble(r["High"]),
+                    PriceLow = Convert.ToDouble(r["Low"]),
+                    PriceClose = Convert.ToDouble(r["Close"]),
+                    PriceAdj = Convert.ToDouble(r["Adj Close"]),
+                    Volume = Convert.ToDouble(r["Volume"])
+                });
             }
-            return ticker;
+            return res;
         }
-
     }
 }

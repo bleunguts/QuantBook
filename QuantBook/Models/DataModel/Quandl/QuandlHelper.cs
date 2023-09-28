@@ -1,4 +1,6 @@
 ﻿using Quandl.NET;
+using QuandlCS.Requests;
+using QuandlCS.Types;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -13,7 +15,34 @@ namespace QuantBook.Models.DataModel.Quandl
 {
     public static class QuandlHelper
     {
-        const string apiKey = "QgZEw__KgudKNApAxp3e";
+        private const string quandlKey = "gp_z7rn26KEP3uJFuuiw";
+
+        public static DataTable GetQuandlData(string ticker, string dataSource, DateTime startDate, DateTime endDate)
+        {
+            QuandlDownloadRequest request = new QuandlDownloadRequest();
+            request.APIKey = quandlKey;
+            request.Datacode = new Datacode(dataSource, ticker);
+            request.Format = FileFormats.CSV;
+            request.Frequency = Frequencies.Daily;
+            request.StartDate = startDate;
+            request.EndDate = endDate;
+            request.Sort = SortOrders.Ascending;
+
+            string ss = request.ToRequestString().Replace("/v1/", "/v3/");
+
+            DataTable dt = new DataTable();
+            using (WebClient client = new WebClient())
+            {
+                try
+                {
+                    client.DownloadFile(ss, "my.csv");
+                    dt = ModelHelper.CsvToDatatable("my.csv");
+                    File.Delete("my.csv");
+                }
+                catch { }
+            }
+            return dt;
+        }
 
         public static string GetQuandlDataAsync(string databaseCode)
         {
@@ -41,7 +70,7 @@ namespace QuantBook.Models.DataModel.Quandl
 
         public static async Task<DataTable> GetQuandlDataAsync(string ticker, string databaseCode, DateTime startDate, DateTime endDate)
         {
-            var client = new QuandlClient(apiKey);
+            var client = new QuandlClient(quandlKey);
             var response = await client.Timeseries.GetDataAsync(databaseCode, ticker, limit: 20, startDate: startDate, endDate: endDate);
             return TimeSeriesDataSetToDataTable(response.DatasetData.ColumnNames, response.DatasetData.Data);
         }
