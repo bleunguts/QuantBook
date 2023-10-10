@@ -32,8 +32,9 @@ namespace QuantBook.Ch11
             // These parameters are specific to the amount of resultant data from Quandl API 
             // Moving Window < Size of data, the smaller the bigger the Signal data set
             Ticker = "IBM";
-            StartDate = new DateTime(2012, 3, 1);
-            EndDate = new DateTime(2013, 7, 31);
+            // Quandl goes up to 2018 ONLY
+            StartDate = new DateTime(2018, 2, 25);
+            EndDate = new DateTime(2018, 3, 11);
             MovingWindow = 5;
         }
 

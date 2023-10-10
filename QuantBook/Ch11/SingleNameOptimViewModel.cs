@@ -26,8 +26,8 @@ namespace QuantBook.Ch11
         }
 
         private string ticker = "IBM";
-        private DateTime startDate = new DateTime(2010, 1, 3);
-        private DateTime endDate = new DateTime(2015, 12, 31);
+        private DateTime startDate = new DateTime(2018, 1, 15);
+        private DateTime endDate = new DateTime(2018, 2, 11);
         private IEnumerable<PriceTypeEnum> priceType;
         private PriceTypeEnum selectedPriceType;
         private IEnumerable<SignalTypeEnum> signalType;
