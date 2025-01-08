@@ -33,9 +33,48 @@ namespace QuantBook.Models.DataModel
                 case DataSourceEnum.Database:
                     res = GetStockDataFromDatabase(ticker, startDate, endDate);
                     break;
+                case DataSourceEnum.Random:
+                    res = GetStockDataFromRandomGenerator(ticker, startDate, endDate);
+                    break;
             }
 
             return res;
+        }
+        private static Random random = new Random();
+        private static BindableCollection<StockData> GetStockDataFromRandomGenerator(string ticker, DateTime startDate, DateTime endDate)
+        {
+            BindableCollection<StockData> res = new BindableCollection<StockData>();
+            
+            var current = startDate;
+            while (current <= endDate)
+            {
+                res.Add(new StockData
+                {
+                    Ticker = ticker,
+                    Date = current,
+                    Open = RandomPrice(),
+                    High = RandomPrice(),
+                    Low = RandomPrice(),
+                    Close = RandomPrice(),
+                    AdjClose = RandomPrice(),
+                    Volume = RandomVolume()
+                });
+
+                current = current.AddDays(1);
+            }
+            
+            return res;
+            
+            double RandomPrice(double low = 120, double high = 135)
+            {                
+                int swing = (int) (high - low);
+                return low + (random.Next(0, swing) + random.NextDouble());                
+            }
+            double RandomVolume(int low = 32112797, int high = 50884452)
+            {
+                int swing = high - low;
+                return low + random.Next(0, swing);
+            }
         }
 
         public static BindableCollection<StockData> GetStockDataFromQuandl(string ticker, DateTime startDate, DateTime endDate)
@@ -325,6 +364,7 @@ namespace QuantBook.Models.DataModel
         Quandl = 1,
         Google = 2,
         Database = 3,
+        Random = 4,
     }
 
 }

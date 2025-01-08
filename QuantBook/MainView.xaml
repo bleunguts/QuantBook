@@ -59,6 +59,7 @@
                     <Button Content="Chapter 1" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
                     <Button Content="[DATABASE] 3" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
                     <Button Content="[MARKETDATA] 4" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
+                    <Button Content="[ML] 8" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
                     <Button Content="[OPTIONS] 9" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
                     <Button Content="[BONDS] 10" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>
                     <Button Content="[TRADING] 11" Width="100" Margin="0 5 0 0" Background="Transparent" cal:Message.Attach="[Event Click]=[Action OnClick($source)]"/>

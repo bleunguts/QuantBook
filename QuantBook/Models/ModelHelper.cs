@@ -19,6 +19,24 @@ namespace QuantBook.Models
 {
     public static class ModelHelper
     {
+        public static T To<T>(this object text)
+        {
+            if (text == null) return default(T);
+            if (text.Equals(DBNull.Value)) return default(T);
+            if (text is string) if (string.IsNullOrWhiteSpace(text as string)) return default(T);
+
+            var type = typeof(T);
+            if (type.ToString() == "QuantLib.Date")
+            {
+                var dt = (DateTime)text;
+                QuantLib.Date date = new QuantLib.Date((int)dt.ToOADate());
+                return (T)Convert.ChangeType(date, type);
+            }
+
+            var underlyingType = Nullable.GetUnderlyingType(type) ?? type;
+
+            return (T)Convert.ChangeType(text, underlyingType);
+        }
         public static double[] GetAutoCorrelation(double[] x)
         {
             int half = (int)x.Length / 2;
@@ -278,27 +296,6 @@ namespace QuantBook.Models
             }
             return num;
         }
-
-
-        public static T To<T>(this object text)
-        {
-            if (text == null) return default(T);
-            if (text.Equals(DBNull.Value)) return default(T);
-            if (text is string) if (string.IsNullOrWhiteSpace(text as string)) return default(T);
-
-            var type = typeof(T);
-            if (type.ToString() == "QuantLib.Date")
-            {
-                var dt = (DateTime)text;
-                QuantLib.Date date = new QuantLib.Date((int)dt.ToOADate());
-                return (T)Convert.ChangeType(date, type);
-            }
-
-            var underlyingType = Nullable.GetUnderlyingType(type) ?? type;
-
-            return (T)Convert.ChangeType(text, underlyingType);
-        }
-
         public static T ToDatetime<T>(this QuantLib.Date date)
         {
             DateTime dt = Convert.ToDateTime(date.month() + " " + date.dayOfMonth().ToString() + ", " + date.year().ToString());

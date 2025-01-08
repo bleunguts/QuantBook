@@ -1,0 +1,92 @@
+﻿<UserControl x:Class="QuantBook.Ch08.KnnView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:QuantBook.Models.ChartModel"
+             mc:Ignorable="d" 
+             d:DesignHeight="500" d:DesignWidth="800">
+    <Grid Margin="20">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Margin="0 0 10 0">
+            <GroupBox Header="Input Data">
+                <StackPanel Margin="0 0 0 5">
+                    <StackPanel Orientation="Horizontal" Margin="0 5 0 0">
+                        <TextBlock Text="Ticker:" Width="120" VerticalAlignment="Center" TextAlignment="Right"/>
+                        <TextBox x:Name="Ticker" Width="90" TextAlignment="Center" Margin="10 0 0 0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0 5 0 0">
+                        <TextBlock Text="Start Date:" Width="120" VerticalAlignment="Center" TextAlignment="Right"/>
+                        <TextBox x:Name="StartDate" Width="90" TextAlignment="Center" Text="1/3/2000" Margin="10 0 0 0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0 5 0 0">
+                        <TextBlock Text="End Date:" Width="120" VerticalAlignment="Center" TextAlignment="Right"/>
+                        <TextBox x:Name="EndDate" Width="90" TextAlignment="Center" Text="11/14/2013" Margin="10 0 0 0"/>
+                    </StackPanel>
+                    <Button x:Name="LoadData" Content="Load Data" Width="150" Margin="0 20 0 0"/>
+                </StackPanel>
+            </GroupBox>
+            
+            <GroupBox Header="KNN Settings" Margin="0 30 0 0">
+                <StackPanel Margin="0 0 0 5">
+                    <StackPanel Orientation="Horizontal" Margin="0 5 0 0">
+                        <TextBlock Text="Number of K:" Width="120" VerticalAlignment="Center" TextAlignment="Right"/>
+                        <TextBox x:Name="KNumber" Width="90" TextAlignment="Center" Text="4" Margin="10 0 0 0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0 5 0 0">
+                        <TextBlock Text="Training Start Date:" Width="120" VerticalAlignment="Center" TextAlignment="Right"/>
+                        <TextBox x:Name="TrainStartDate" Width="90" TextAlignment="Center" Text="1/3/2005" Margin="10 0 0 0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0 5 0 0">
+                        <TextBlock Text="Training End Date:" Width="120" VerticalAlignment="Center" TextAlignment="Right"/>
+                        <TextBox x:Name="TrainEndDate" Width="90" TextAlignment="Center" Text="3/1/2013" Margin="10 0 0 0"/>
+                    </StackPanel>
+                    
+                    <Button x:Name="StartKnn" Content="Start KNN" Width="150" Margin="0 20 0 0"/>
+                    <Button x:Name="StartKnnAll" Content="Start KNN All" Width="150" Margin="0 20 0 0"/>
+                </StackPanel>
+            </GroupBox>
+                      
+        </StackPanel>
+        <Grid Grid.Column="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <DataGrid ColumnWidth="Auto" CanUserAddRows="False" ItemsSource="{Binding Table1}" Grid.Column="0" SelectionUnit="Cell"/>
+            <Grid Grid.Column="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <DataGrid ColumnWidth="Auto" CanUserAddRows="False" ItemsSource="{Binding Table2}" Grid.Column="0" SelectionUnit="Cell"/>
+                <Grid Grid.Column="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Margin="10 0 0 0">
+                        <TextBlock Text="Confusion Matrix: Training Set:"/>
+                        <DataGrid ColumnWidth="Auto" CanUserAddRows="False" ItemsSource="{Binding Table3}" SelectionUnit="Cell"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="1" Margin="10 0 0 0">
+                        <TextBlock Text="Confusion Matrix: Prediction Set:"/>
+                        <DataGrid ColumnWidth="Auto" CanUserAddRows="False" ItemsSource="{Binding Table4}" SelectionUnit="Cell"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+            <local:MsChart SeriesCollection="{Binding LineSeriesCollection1}" DataSource="{Binding Table1}"
+                           Title="{Binding Title1}" Grid.Column="0" Grid.Row="1"
+                           XLabel="Date" YLabel="Stock Price"/>
+            <local:MsChart SeriesCollection="{Binding LineSeriesCollection2}" DataSource="{Binding Table2}"
+                           Title="{Binding Title2}" Grid.Column="1" Grid.Row="1" XLabel="K" YLabel="AccuracyPredict" Y2Label="AccuracyTraining"/>
+        </Grid>
+    </Grid>
+</UserControl>
