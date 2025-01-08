@@ -23,17 +23,17 @@ namespace QuantBook.Ch08
         {
             this._events = events;
             DisplayName = "03. ANN: Classification";
-            StartDate = new DateTime(2010, 1, 3);
-            EndDate = new DateTime(2015, 12, 31);
-            TrainStartDate = new DateTime(2010, 1, 3);
-            TrainEndDate = new DateTime(2014, 12, 31);
-                      
+            StartDate = new DateTime(2015, 12, 27);
+            EndDate = new DateTime(2016, 12, 27);
+            TrainStartDate = new DateTime(2015, 12, 27);
+            TrainEndDate = new DateTime(2016, 6, 1); // Train half data, leave half for testdata
+
             LineSeriesCollectionError = new BindableCollection<Series>();
         }
 
         public BindableCollection<Series> LineSeriesCollectionError { get; set; }
 
-        private string ticker = "GS";
+        private string ticker = "AAPL";
         public string Ticker
         {
             get { return ticker; }

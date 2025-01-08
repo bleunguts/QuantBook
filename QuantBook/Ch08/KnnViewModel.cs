@@ -19,11 +19,11 @@ namespace QuantBook.Ch08
         public KnnViewModel(IEventAggregator events)
         {
             this._events = events;
-            DisplayName = "01. KNN Stocks";
-            StartDate = new DateTime(2000, 1, 3);
-            EndDate = new DateTime(2015, 12, 31);
-            TrainStartDate = new DateTime(2000, 1, 3);
-            TrainEndDate = new DateTime(2014, 12, 31);
+            DisplayName = "01. KNN Stocks";            
+            StartDate = new DateTime(2015, 12, 27);
+            EndDate = new DateTime(2016, 12, 27);
+            TrainStartDate = new DateTime(2015, 12, 27);
+            TrainEndDate = new DateTime(2016, 6, 1); // Train half data, leave half for testdata
 
             LineSeriesCollection1 = new BindableCollection<Series>();
             LineSeriesCollection2 = new BindableCollection<Series>();
@@ -32,7 +32,7 @@ namespace QuantBook.Ch08
         public BindableCollection<Series> LineSeriesCollection1 { get; set; }
         public BindableCollection<Series> LineSeriesCollection2 { get; set; }
 
-        private string ticker = "IBM";
+        private string ticker = "AAPL";
         public string Ticker
         {
             get { return ticker; }

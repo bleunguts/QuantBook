@@ -48,6 +48,7 @@ namespace QuantBook.Models.DataModel
             var current = startDate;
             while (current <= endDate)
             {
+                var volume = RandomVolume();
                 res.Add(new StockData
                 {
                     Ticker = ticker,
@@ -56,8 +57,12 @@ namespace QuantBook.Models.DataModel
                     High = RandomPrice(),
                     Low = RandomPrice(),
                     Close = RandomPrice(),
+                    AdjOpen = RandomPrice(),
+                    AdjHigh = RandomPrice(),
+                    AdjLow = RandomPrice(),
                     AdjClose = RandomPrice(),
-                    Volume = RandomVolume()
+                    Volume = volume,
+                    AdjVolume = volume,
                 });
 
                 current = current.AddDays(1);
